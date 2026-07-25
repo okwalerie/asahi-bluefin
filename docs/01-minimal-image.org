@@ -159,3 +159,25 @@ tools.
 this milestone does not add codecs, desktop applications, personal rpm repos,
 automatic operating-system updates, or automatic =m1n1= refreshes. each will
 be introduced only after this substrate has built and booted successfully.
+
+* first published build
+
+the first complete arm64 build finished successfully on 2026-07-25:
+
+- source commit: =4cb6b320524708333245c08642a509658360d1a0=
+- action run: https://github.com/okwalerie/asahi-bluefin/actions/runs/30178409804
+- image digest: =sha256:20ce668e96e1b76e8d690b8e56d0f47bb23a5c166e12ba3407750a58d43d7282=
+- upstream base digest: =sha256:f2d414b5030c27680a8be785ed15f11cb14b6424deed411ca6cf4cd42209ad74=
+- architecture: =arm64=
+- bootc label: =1=
+- asahi kernel: =7.0.13-400.asahi.fc44.aarch64+16k=
+
+the build log confirms that firefox was already present in the inherited
+silverblue image; chromium =150.0.7871.181-1.fc44= and tailscale =1.98.9-1=
+were installed as aarch64 rpms. the brew module installed its arm64 portable
+ruby, wrote the runtime setup and update units, and enabled =brew-setup.service=.
+=tailscaled.service= was enabled by the systemd module.
+
+the published =latest= manifest contains only an arm64 image plus its
+attestation. cosign verification passed against the repository's =cosign.pub=
+and the recorded transparency-log bundle.
