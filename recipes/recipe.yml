@@ -63,28 +63,15 @@ modules:
         - gnome-shell-extension-caffeine
         - gnome-shell-extension-dash-to-dock
         - gnome-shell-extension-gsconnect
-
-        - repo: tailscale-stable
-          packages:
-            - tailscale
-        - repo: ublue-packages
-          packages:
-            - uupd
-        - repo: ghostty-copr
-          packages:
-            - ghostty
-        - repo: starship-copr
-          packages:
-            - starship
-        - repo: claude-desktop-bin
-          packages:
-            - claude-desktop-bin
-        - repo: codex-desktop-bin
-          packages:
-            - codex-desktop
-        - repo: handy
-          packages:
-            - handy
+        # each enabled build-only repo has an includepkgs allowlist; resolving
+        # in one transaction keeps fedora available for their dependencies.
+        - tailscale
+        - uupd
+        - ghostty
+        - starship
+        - claude-desktop-bin
+        - codex-desktop
+        - handy
 
   - type: brew
     brew-analytics: false

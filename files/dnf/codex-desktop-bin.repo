@@ -1,7 +1,7 @@
 [codex-desktop-bin]
 name=codex-desktop from GitHub via Reprox
 baseurl=https://reprox.dev/okwalerie/codex-desktop-bin
-enabled=0
+enabled=1
 repo_gpgcheck=1
 gpgcheck=0
 gpgkey=https://reprox.dev/okwalerie/codex-desktop-bin/public.key

@@ -152,6 +152,12 @@ assets, so its configuration necessarily uses =repo_gpgcheck=1= and
 reprox packages are accepted because this is a personal image, not represented
 as a safe general default.
 
+all custom repositories are enabled only for the single build transaction,
+constrained with =includepkgs= allowlists, and removed from the final image by
+the dnf module. keeping them enabled together lets dnf resolve their ordinary
+dependencies from fedora; a repo-scoped install would incorrectly hide fedora
+and, for example, report ghostty's =zlib-ng= dependency as unavailable.
+
 the current claude desktop package bundles cowork. installing the obsolete
 standalone =claude-cowork-service= would create two competing implementations,
 and its kvm mode does not support aarch64. the image instead includes

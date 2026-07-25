@@ -1,7 +1,7 @@
 [handy]
 name=Handy from GitHub via Reprox
 baseurl=https://reprox.dev/cjpais/Handy
-enabled=0
+enabled=1
 repo_gpgcheck=1
 gpgcheck=0
 gpgkey=https://reprox.dev/cjpais/Handy/public.key
