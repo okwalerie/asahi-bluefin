@@ -222,3 +222,26 @@ ruby, wrote the runtime setup and update units, and enabled =brew-setup.service=
 the published =latest= manifest contains only an arm64 image plus its
 attestation. cosign verification passed against the repository's =cosign.pub=
 and the recorded transparency-log bundle.
+
+* m1n1 compatibility build
+
+the epoch-zero gzip failure was reproduced on the first image after it booted
+successfully on the target m1 pro. the live deployment used unmodified
+=update-m1n1-20250713-7.fc44= and =uboot-images-armv8-2026.04-102.fc44=
+package contents; rpm-ostree had canonicalized their timestamps.
+
+the corrective build finished successfully on 2026-07-25:
+
+- source commit: =8396fcc18e43d10a4b80e9c04a8584e67df73d8b=
+- action run: https://github.com/okwalerie/asahi-bluefin/actions/runs/30179199930
+- published manifest digest: =sha256:a98818d86fd1055e8723a29ea1c67f6a82e09cd9e7bd1fa98a9952da416d3a5a=
+- architecture: =arm64=
+- script-module result: =patch-update-m1n1.sh= finished successfully
+- signature result: cosign claims, transparency-log bundle, and repository
+  public-key verification all passed
+
+the failure and proposed source correction were reported to the script
+maintainers, then cross-linked into the fedora asahi atomic image discussion:
+
+- https://github.com/AsahiLinux/asahi-scripts/issues/71
+- https://github.com/fedora-asahi-remix-atomic-desktops/images/issues/5#issuecomment-5081016771
