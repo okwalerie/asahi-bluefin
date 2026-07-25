@@ -17,6 +17,9 @@ modules:
         - tailscale.repo
     install:
       packages:
+        - firefox
+        - firefox-langpacks
+        - chromium
         - repo: tailscale-stable
           packages:
             - tailscale

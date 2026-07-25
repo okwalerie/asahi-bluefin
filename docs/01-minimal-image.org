@@ -13,7 +13,8 @@ the acceptance criteria are:
 2. github actions builds it natively on arm64;
 3. tailscale is installed and =tailscaled.service= is enabled;
 4. homebrew initializes on first boot;
-5. the image is signed and published to the owner's ghcr namespace.
+5. firefox and chromium are installed as native fedora rpms;
+6. the image is signed and published to the owner's ghcr namespace.
 
 * why this base
 
@@ -58,6 +59,17 @@ configuration after the build:
       - repo: tailscale-stable
         packages:
           - tailscale
+#+end_src
+
+firefox, its language packs, and chromium resolve only from the inherited
+fedora repositories. no browser flatpaks are configured:
+
+#+begin_src yaml
+install:
+  packages:
+    - firefox
+    - firefox-langpacks
+    - chromium
 #+end_src
 
 homebrew uses bluebuild's runtime-aware module rather than copying a mutable
@@ -135,6 +147,7 @@ bootc status
 systemctl is-enabled tailscaled.service
 tailscale version
 /home/linuxbrew/.linuxbrew/bin/brew --version
+rpm -q firefox chromium
 #+end_src
 
 expected results are a booted =ghcr.io/okwalerie/asahi-bluefin= image, an

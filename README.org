@@ -15,6 +15,7 @@ remix silverblue and adds only:
 
 - homebrew, using bluebuild's brew module
 - tailscale, using tailscale's official rpm repository
+- firefox and chromium as native fedora rpms, not flatpaks
 
 the asahi kernel, mesa, firmware, audio configuration, desktop, and boot stack
 come from the upstream image and are not replaced here.
