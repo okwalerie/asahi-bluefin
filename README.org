@@ -1,0 +1,79 @@
+#+title: asahi-bluefin
+#+subtitle: a small, experimental fedora asahi atomic image
+#+options: toc:2
+
+* purpose
+
+this repository builds one arm64 bootable container image:
+
+#+begin_example
+ghcr.io/okwalerie/asahi-bluefin:latest
+#+end_example
+
+the first milestone is deliberately narrow. the image inherits fedora asahi
+remix silverblue and adds only:
+
+- homebrew, using bluebuild's brew module
+- tailscale, using tailscale's official rpm repository
+
+the asahi kernel, mesa, firmware, audio configuration, desktop, and boot stack
+come from the upstream image and are not replaced here.
+
+* status
+
+this is an unofficial personal image. neither fedora asahi remix, asahi linux,
+universal blue, nor bluefin supports it.
+
+the base image is itself experimental. automatic =m1n1= handling is outside
+this first milestone, so the manual post-update step still applies: after
+booting an updated deployment, run =sudo update-m1n1= and reboot again.
+
+* implementation record
+
+the literate, reproducible account of the image and its verification lives in
+[[file:docs/01-minimal-image.org][docs/01-minimal-image.org]]. the executable configuration remains small enough
+to inspect directly in [[file:recipes/recipe.yml][recipes/recipe.yml]].
+
+* rebase
+
+wait for the github action to publish a successful image. then, from the
+existing fedora asahi atomic silverblue installation, first install the image
+without signature enforcement so its cosign policy is present locally:
+
+#+begin_src sh
+sudo rpm-ostree rebase ostree-unverified-registry:ghcr.io/okwalerie/asahi-bluefin:latest
+sudo systemctl reboot
+#+end_src
+
+then select the signed image:
+
+#+begin_src sh
+sudo rpm-ostree rebase ostree-image-signed:docker://ghcr.io/okwalerie/asahi-bluefin:latest
+sudo systemctl reboot
+#+end_src
+
+refresh the asahi boot payload from the newly booted deployment:
+
+#+begin_src sh
+sudo update-m1n1
+sudo systemctl reboot
+#+end_src
+
+finally, authenticate tailscale:
+
+#+begin_src sh
+sudo tailscale up
+#+end_src
+
+homebrew is initialized on first boot. its executable is
+=/home/linuxbrew/.linuxbrew/bin/brew= and is added to interactive shell paths.
+
+* rollback
+
+the previous atomic deployment remains in the boot menu. it can also be
+selected for the next boot with:
+
+#+begin_src sh
+sudo rpm-ostree rollback
+sudo systemctl reboot
+#+end_src

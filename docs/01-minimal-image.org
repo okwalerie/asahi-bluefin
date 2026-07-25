@@ -1,0 +1,148 @@
+#+title: milestone 1: a minimal asahi image
+#+date: 2026-07-25
+#+options: toc:2
+
+* objective
+
+publish a rebaseable arm64 image that changes as little as possible while
+proving the complete build, signing, ghcr publication, and rebase path.
+
+the acceptance criteria are:
+
+1. the image derives from fedora asahi remix atomic silverblue 44;
+2. github actions builds it natively on arm64;
+3. tailscale is installed and =tailscaled.service= is enabled;
+4. homebrew initializes on first boot;
+5. the image is signed and published to the owner's ghcr namespace.
+
+* why this base
+
+an ordinary fedora or universal blue image does not contain the apple silicon
+kernel and platform integration needed by the machine. the selected image is:
+
+#+begin_example
+quay.io/fedora-asahi-remix-atomic-desktops/silverblue:44
+#+end_example
+
+pinning =44= prevents an unattended major fedora transition. scheduled builds
+still receive new fedora 44 images from upstream.
+
+the upstream project is explicitly unofficial and experimental:
+
+- https://github.com/fedora-asahi-remix-atomic-desktops/images
+- https://github.com/fedora-asahi-remix-atomic-desktops/images/issues/5
+
+* recipe
+
+the complete behavior is declared in =recipes/recipe.yml=. in outline:
+
+#+begin_src yaml
+base-image: quay.io/fedora-asahi-remix-atomic-desktops/silverblue
+image-version: 44
+platforms:
+  - linux/arm64
+#+end_src
+
+tailscale comes from its official fedora repository. the checked-in repo file
+limits that source to the =tailscale= package, and bluebuild removes the repo
+configuration after the build:
+
+#+begin_src yaml
+- type: dnf
+  repos:
+    cleanup: true
+    files:
+      - tailscale.repo
+  install:
+    packages:
+      - repo: tailscale-stable
+        packages:
+          - tailscale
+#+end_src
+
+homebrew uses bluebuild's runtime-aware module rather than copying a mutable
+brew installation into the immutable image:
+
+#+begin_src yaml
+- type: brew
+  brew-analytics: false
+#+end_src
+
+the daemon is enabled declaratively:
+
+#+begin_src yaml
+- type: systemd
+  system:
+    enabled:
+      - tailscaled.service
+#+end_src
+
+* build path
+
+the workflow uses github's native arm64 runner. this matters: the asahi base is
+arm64-only, and emulating the image on an x86 runner adds time and another
+failure surface.
+
+the workshop-created =SIGNING_SECRET= and checked-in =cosign.pub= are retained.
+bluebuild publishes the signed result to:
+
+#+begin_example
+ghcr.io/okwalerie/asahi-bluefin:latest
+#+end_example
+
+* reproducible preflight
+
+validate yaml syntax:
+
+#+begin_src sh
+yq eval '.' recipes/recipe.yml >/dev/null
+yq eval '.' .github/workflows/build.yml >/dev/null
+#+end_src
+
+validate the recipe with the same bluebuild cli family used by the action:
+
+#+begin_src sh
+podman run --rm \
+  --volume "$PWD:/repo:Z" \
+  --workdir /repo \
+  ghcr.io/blue-build/cli:latest \
+  bluebuild validate recipes/recipe.yml
+#+end_src
+
+confirm the selected upstream image is arm64 and bootable:
+
+#+begin_src sh
+skopeo inspect \
+  --no-creds \
+  docker://quay.io/fedora-asahi-remix-atomic-desktops/silverblue:44 \
+  | jq '{Architecture, Digest, Labels}'
+#+end_src
+
+* post-publish verification
+
+verify the registry signature before rebasing:
+
+#+begin_src sh
+cosign verify \
+  --key cosign.pub \
+  ghcr.io/okwalerie/asahi-bluefin:latest
+#+end_src
+
+after rebase and reboot, collect the following evidence:
+
+#+begin_src sh
+bootc status
+systemctl is-enabled tailscaled.service
+tailscale version
+/home/linuxbrew/.linuxbrew/bin/brew --version
+#+end_src
+
+expected results are a booted =ghcr.io/okwalerie/asahi-bluefin= image, an
+enabled tailscale daemon, and successful version output from both installed
+tools.
+
+* deliberately deferred
+
+this milestone does not add codecs, desktop applications, personal rpm repos,
+automatic operating-system updates, or automatic =m1n1= refreshes. each will
+be introduced only after this substrate has built and booted successfully.
