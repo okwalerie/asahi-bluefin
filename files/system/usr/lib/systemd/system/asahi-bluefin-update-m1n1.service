@@ -1,0 +1,13 @@
+[Unit]
+Description=Refresh the Asahi m1n1 boot payload for the booted deployment
+Documentation=https://github.com/AsahiLinux/asahi-scripts/issues/71
+After=local-fs.target
+Before=multi-user.target graphical.target
+ConditionPathExists=/usr/bin/update-m1n1
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/asahi-bluefin/update-m1n1-if-needed
+
+[Install]
+WantedBy=multi-user.target

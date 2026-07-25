@@ -1,5 +1,5 @@
 #+title: asahi-bluefin
-#+subtitle: a small, experimental fedora asahi atomic image
+#+subtitle: a personal, bluefin-inspired fedora asahi atomic image
 #+options: toc:2
 
 * purpose
@@ -10,12 +10,16 @@ this repository builds one arm64 bootable container image:
 ghcr.io/okwalerie/asahi-bluefin:latest
 #+end_example
 
-the first milestone is deliberately narrow. the image inherits fedora asahi
-remix silverblue and adds only:
+the image inherits fedora asahi remix silverblue and adds a deliberately
+asahi-safe subset of the bluefin experience:
 
 - homebrew, using bluebuild's brew module
 - tailscale, using tailscale's official rpm repository
-- firefox and chromium as native fedora rpms, not flatpaks
+- automatic os, flatpak, and brew updates through =uupd=
+- a deployment-aware =m1n1= refresh after a successful boot
+- firefox from flathub for the complete media runtime, plus native chromium
+- selected desktop applications, gnome extensions, and terminal conveniences
+- the personal claude desktop, codex desktop, handy, ghostty, and emacs packages
 
 the asahi kernel, mesa, firmware, audio configuration, desktop, and boot stack
 come from the upstream image and are not replaced here.
@@ -25,9 +29,10 @@ come from the upstream image and are not replaced here.
 this is an unofficial personal image. neither fedora asahi remix, asahi linux,
 universal blue, nor bluefin supports it.
 
-the base image is itself experimental. automatic =m1n1= handling is outside
-this first milestone, so the manual post-update step still applies: after
-booting an updated deployment, run =sudo update-m1n1= and reboot again.
+the base image is itself experimental. automatic updates are staged but never
+force a reboot. after the next deployment boots successfully, the image
+refreshes =boot.bin= once for that deployment. a subsequent reboot is required
+only to begin using the refreshed stage-2 boot payload.
 
 the image carries a narrow compatibility patch for that command. rpm-ostree
 canonicalizes files in =/usr= to an epoch-zero timestamp; unpatched
@@ -37,9 +42,13 @@ aborts the update. the image changes that invocation from =gzip -c= to
 
 * implementation record
 
-the literate, reproducible account of the image and its verification lives in
-[[file:docs/01-minimal-image.org][docs/01-minimal-image.org]]. the executable configuration remains small enough
-to inspect directly in [[file:recipes/recipe.yml][recipes/recipe.yml]].
+the literate, reproducible records are:
+
+- [[file:docs/01-minimal-image.org][docs/01-minimal-image.org]]: the first minimal, boot-tested milestone;
+- [[file:docs/02-bluefin-layer.org][docs/02-bluefin-layer.org]]: the asahi compatibility audit and current design.
+
+the executable configuration remains inspectable in
+[[file:recipes/recipe.yml][recipes/recipe.yml]].
 
 * rebase
 
@@ -59,13 +68,6 @@ sudo rpm-ostree rebase ostree-image-signed:docker://ghcr.io/okwalerie/asahi-blue
 sudo systemctl reboot
 #+end_src
 
-refresh the asahi boot payload from the newly booted deployment:
-
-#+begin_src sh
-sudo update-m1n1
-sudo systemctl reboot
-#+end_src
-
 finally, authenticate tailscale:
 
 #+begin_src sh
@@ -74,6 +76,21 @@ sudo tailscale up
 
 homebrew is initialized on first boot. its executable is
 =/home/linuxbrew/.linuxbrew/bin/brew= and is added to interactive shell paths.
+the default flatpaks are installed for each user after login.
+
+claude desktop bundles cowork, but its arm64 virtualization path needs access
+to =/dev/kvm=. grant that once, then log out and back in:
+
+#+begin_src sh
+sudo usermod -aG kvm "$USER"
+#+end_src
+
+inspect automatic updates and the asahi boot refresh with:
+
+#+begin_src sh
+systemctl status uupd.timer asahi-bluefin-update-m1n1.service
+journalctl -u uupd.service -u asahi-bluefin-update-m1n1.service
+#+end_src
 
 * rollback
 

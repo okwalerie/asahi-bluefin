@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# refresh boot.bin once per successfully booted rpm-ostree deployment.
+set -euo pipefail
+
+state_directory=/var/lib/asahi-bluefin
+state_file=${state_directory}/m1n1-deployment
+booted_deployment=$(
+  rpm-ostree status --json |
+    jq -er '.deployments[] | select(.booted) | .checksum'
+)
+
+if [[ -r $state_file ]] && [[ $(<"$state_file") == "$booted_deployment" ]]; then
+  exit 0
+fi
+
+update-m1n1
+
+install -d -m 0755 "$state_directory"
+temporary_state=$(mktemp --tmpdir="$state_directory" m1n1-deployment.XXXXXX)
+trap 'rm -f "$temporary_state"' exit
+printf '%s\n' "$booted_deployment" >"$temporary_state"
+chmod 0644 "$temporary_state"
+mv -f "$temporary_state" "$state_file"

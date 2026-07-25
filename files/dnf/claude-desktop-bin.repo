@@ -1,0 +1,8 @@
+[claude-desktop-bin]
+name=claude-desktop-bin from GitHub via Reprox
+baseurl=https://reprox.dev/patrickjaja/claude-desktop-bin
+enabled=0
+repo_gpgcheck=1
+gpgcheck=0
+gpgkey=https://reprox.dev/patrickjaja/claude-desktop-bin/public.key
+includepkgs=claude-desktop-bin

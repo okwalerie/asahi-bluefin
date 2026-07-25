@@ -1,7 +1,7 @@
 ---
 # yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
 name: asahi-bluefin
-description: Minimal Fedora Asahi Remix Silverblue with Homebrew and Tailscale.
+description: A personal, Bluefin-inspired Fedora Asahi Remix Silverblue image.
 
 # Keep the Asahi kernel, Mesa, firmware, audio, and boot stack intact.
 base-image: quay.io/fedora-asahi-remix-atomic-desktops/silverblue
@@ -15,17 +15,105 @@ modules:
       cleanup: true
       files:
         - tailscale.repo
-    install:
+        - ublue-packages.repo
+        - ghostty.repo
+        - starship.repo
+        - claude-desktop-bin.repo
+        - codex-desktop-bin.repo
+        - handy.repo
+    remove:
+      auto-remove: false
       packages:
         - firefox
         - firefox-langpacks
+    install:
+      packages:
+        # desktop applications and claude cowork's arm64 virtualization path
         - chromium
+        - emacs-pgtk
+        - qemu-system-aarch64
+        - edk2-aarch64
+        - virtiofsd
+
+        # portable terminal conveniences; deliberately no atuin
+        - bat
+        - direnv
+        - eza
+        - fastfetch
+        - fd-find
+        - fzf
+        - gh
+        - glow
+        - gum
+        - jq
+        - just
+        - ripgrep
+        - ShellCheck
+        - tealdeer
+        - tmux
+        - trash-cli
+        - unzip
+        - wl-clipboard
+        - yq
+        - zoxide
+
+        # fedora-packaged extensions avoid build-time extensions.gnome.org
+        - gnome-shell-extension-appindicator
+        - gnome-shell-extension-blur-my-shell
+        - gnome-shell-extension-caffeine
+        - gnome-shell-extension-dash-to-dock
+        - gnome-shell-extension-gsconnect
+
         - repo: tailscale-stable
           packages:
             - tailscale
+        - repo: ublue-packages
+          packages:
+            - uupd
+        - repo: ghostty-copr
+          packages:
+            - ghostty
+        - repo: starship-copr
+          packages:
+            - starship
+        - repo: claude-desktop-bin
+          packages:
+            - claude-desktop-bin
+        - repo: codex-desktop-bin
+          packages:
+            - codex-desktop
+        - repo: handy
+          packages:
+            - handy
 
   - type: brew
     brew-analytics: false
+    direct-pull: true
+    installer-commit: ca0130bd52235f2fcb2bf23cfdda004bc5d250c1
+    # uupd owns the one update cadence; do not create competing timers.
+    auto-update: false
+    auto-upgrade: false
+
+  - type: default-flatpaks@v2
+    configurations:
+      - scope: user
+        notify: false
+        repo:
+          name: flathub
+          title: Flathub (user)
+        install:
+          - org.mozilla.firefox
+          - io.github.kolunmi.Bazaar
+          - io.missioncenter.MissionCenter
+          - com.mattjakeman.ExtensionManager
+          - com.github.wwmm.easyeffects
+          - com.github.tchx84.Flatseal
+          - io.github.flattool.Warehouse
+
+  - type: files
+    files:
+      - source: system
+        destination: /
 
   # rpm-ostree canonicalizes /usr mtimes to epoch zero. update-m1n1 must not
   # ask gzip to encode that timestamp, because gzip exits 2 and aborts safely.
@@ -37,5 +125,7 @@ modules:
     system:
       enabled:
         - tailscaled.service
+        - uupd.timer
+        - asahi-bluefin-update-m1n1.service
 
   - type: signing

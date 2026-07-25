@@ -1,0 +1,9 @@
+[ghostty-copr]
+name=Ghostty COPR
+baseurl=https://download.copr.fedorainfracloud.org/results/scottames/ghostty/fedora-$releasever-$basearch/
+enabled=0
+type=rpm-md
+repo_gpgcheck=0
+gpgcheck=1
+gpgkey=https://download.copr.fedorainfracloud.org/results/scottames/ghostty/pubkey.gpg
+includepkgs=ghostty gtk4-layer-shell

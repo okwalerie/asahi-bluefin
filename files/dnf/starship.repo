@@ -1,0 +1,9 @@
+[starship-copr]
+name=Starship COPR
+baseurl=https://download.copr.fedorainfracloud.org/results/atim/starship/fedora-$releasever-$basearch/
+enabled=0
+type=rpm-md
+repo_gpgcheck=0
+gpgcheck=1
+gpgkey=https://download.copr.fedorainfracloud.org/results/atim/starship/pubkey.gpg
+includepkgs=starship

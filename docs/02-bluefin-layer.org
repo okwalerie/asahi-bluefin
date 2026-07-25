@@ -1,0 +1,250 @@
+#+title: milestone 2: an asahi-safe personal bluefin layer
+#+date: 2026-07-25
+#+options: toc:3
+
+* decision
+
+this remains one personal image. a general image plus a second personal image
+would duplicate build, signing, update, and boot-test work without serving a
+second actual consumer. bluebuild's multiple-image support remains available
+if a genuinely different machine or audience appears:
+
+- https://blue-build.org/how-to/multiple-images/
+
+the image borrows bluefin's policy and conveniences, not its filesystem or
+package stack. it continues to derive directly from fedora asahi remix atomic
+silverblue so the asahi kernel, mesa, firmware, audio, u-boot, and m1n1 packages
+remain owned by the remix.
+
+* bluebuild module compatibility audit
+
+the audit used blue-build/modules commit
+=5efbffb1792788afec318dcf729fa99186189803= and bluebuild cli =0.9.36=.
+the asahi base manifest is arm64 and advertises the generic =bootc= and
+=ostree.bootable= labels; it does not pretend to be a universal blue image.
+
+| module | verdict | relevant assumption |
+|-
+| =dnf= | use | generic dnf4/dnf5 probing; no ublue base check |
+| =script@v2= | use | generic build-time interpreter dispatch |
+| =systemd= | use | offline enablement of ordinary systemd units |
+| =signing= | use | explicitly supports non-ublue fedora bases |
+| =files= | use | generic atomic-fedora paths; avoid runtime symlink targets |
+| =default-flatpaks@v2= | use deliberately | changes each configured scope to flathub and installs defaults at boot |
+| =brew= | use deliberately | hard-codes the primary user as uid 1000; direct pull avoids the ublue tarball cache |
+| =gschema-overrides= | safe, unused | generic gnome schema compilation |
+| =gnome-extensions= | avoid | generic, but build-time downloads from extensions.gnome.org are brittle |
+| =bling= | reject | mixes deprecated ublue-update, rpm fusion, negativo17, and ublue mutter assumptions |
+
+the modules are source code, not a compatibility certification. in particular,
+the =bling= rpm fusion path has no guard against replacing packages that belong
+to asahi's mesa stack. this image never enables rpm fusion or universal blue's
+kernel, akmod, nvidia, or mutter repositories.
+
+the default-flatpaks v2 module is intentionally configured for a per-user
+flathub scope. it removes the fedora flatpak remote in that scope. this is
+acceptable here because the desired applications and their arm64 builds are on
+flathub; it would be a surprising policy for a generic downstream image.
+
+sources:
+
+- https://blue-build.org/reference/modules/default-flatpaks/v2/
+- https://blue-build.org/reference/modules/brew/
+- https://blue-build.org/reference/modules/bling/
+- https://github.com/blue-build/modules/tree/5efbffb1792788afec318dcf729fa99186189803
+
+* update topology
+
+github actions refreshes the immutable image once a week, on sunday at 06:00
+utc. pushes and manual workflow dispatches still build immediately because
+they represent deliberate source changes, not the scheduled refresh cadence.
+
+=uupd.timer= runs daily at 04:00 local time and performs four useful jobs:
+
+1. check for and stage a newer signed bootc image;
+2. update system and per-user flatpaks;
+3. run =brew update= and =brew upgrade= as the owner of the brew prefix;
+4. leave reboot timing to the user.
+
+distrobox updating is disabled because this image declares no managed
+distroboxes. bluebuild's independent brew update and upgrade timers are also
+disabled; two authorities updating the same mutable prefix would create races
+and inscrutable logs.
+
+because the registry image changes on the weekly schedule, checking daily does
+not produce daily os churn. flatpak and brew can still receive fixes between
+image builds.
+
+the updater is installed from the signed =ublue-os/packages= copr, but it is a
+generic bootc/rpm-ostree client: https://github.com/ublue-os/uupd
+
+* m1n1 and successful-boot ordering
+
+an automatic update must not write an unbooted deployment's stage-2 payload to
+the system esp. the implemented sequence is:
+
+#+begin_example
+weekly image published -> uupd stages it -> user reboots -> new deployment boots
+    -> asahi-bluefin-update-m1n1.service runs update-m1n1
+    -> deployment checksum is recorded only after success
+#+end_example
+
+=update-m1n1-if-needed= reads the checksum of the actually booted rpm-ostree
+deployment. if that checksum is already recorded, it does nothing. otherwise it
+runs the fail-closed, =gzip -nc=-patched =update-m1n1= and records the checksum
+atomically. a failure leaves no stamp, so the next boot retries. a rollback also
+has a different checksum and restores the matching older payload.
+
+the first boot of a new deployment necessarily begins through the previous
+stage-2 payload. after the service refreshes =boot.bin=, another reboot begins
+using the new one. there is no honest way to remove that ordering constraint
+without updating the esp before proving that the new deployment boots.
+
+* browsers and codecs
+
+native fedora firefox was unable to play youtube on the target. =noopenh264=
+primarily supplies cisco's h.264 implementation for webrtc; its presence does
+not provide firefox with a complete general media stack. asahi's apple video
+decoder support is also still incomplete, so software decode is expected.
+
+the image therefore replaces native firefox with flathub's arm64 firefox and
+its matching runtime codecs. native chromium remains installed because it was
+explicitly requested, but it is not the guaranteed media path.
+
+this design explicitly rejects rpm fusion's mesa and =freeworld= substitutions.
+they do not create missing apple video hardware support and can conflict with
+the remix's asahi-specific mesa build. the browser sandbox/runtime boundary is
+less elegant than a native rpm, but here it is materially safer than grafting a
+second graphics and codec repository onto the operating system.
+
+* default flatpaks
+
+the following arm64 applications are installed per user from flathub:
+
+| application | flatpak id |
+|-
+| firefox | =org.mozilla.firefox= |
+| bazaar | =io.github.kolunmi.Bazaar= |
+| mission center | =io.missioncenter.MissionCenter= |
+| extension manager | =com.mattjakeman.ExtensionManager= |
+| easyeffects | =com.github.wwmm.easyeffects= |
+| flatseal | =com.github.tchx84.Flatseal= |
+| warehouse | =io.github.flattool.Warehouse= |
+
+easyeffects stays a flatpak because that distribution includes the expected
+plugin ecosystem without adding audio-plugin packages to the immutable image.
+
+* layered applications and trust boundaries
+
+| application | rpm package | source | decision |
+|-
+| emacs pgtk | =emacs-pgtk= | fedora | include |
+| ghostty | =ghostty= | signed =scottames/ghostty= copr | include |
+| starship | =starship= | signed =atim/starship= copr | include |
+| claude desktop | =claude-desktop-bin= | reprox of patrickjaja releases | include, personal trust |
+| codex desktop | =codex-desktop= | reprox of okwalerie releases | include, personal and experimental |
+| handy | =handy= | reprox of cjpais releases | include, personal trust |
+| claude cowork service | obsolete package | reprox | reject |
+
+reprox signs repository metadata but redirects to unsigned github release rpm
+assets, so its configuration necessarily uses =repo_gpgcheck=1= and
+=gpgcheck=0=. that is weaker than fedora or copr package signatures. the three
+reprox packages are accepted because this is a personal image, not represented
+as a safe general default.
+
+the current claude desktop package bundles cowork. installing the obsolete
+standalone =claude-cowork-service= would create two competing implementations,
+and its kvm mode does not support aarch64. the image instead includes
+=qemu-system-aarch64=, =edk2-aarch64=, and =virtiofsd= for the bundled path.
+the user must join the =kvm= group once:
+
+#+begin_src sh
+sudo usermod -aG kvm "$USER"
+#+end_src
+
+log out and back in before testing cowork.
+
+the codex desktop rpm is named =codex-desktop= even though its repository is
+named =codex-desktop-bin=. it is a community reconstruction from the official
+macos application, not a first-party linux desktop release, so a successful rpm
+build is not proof that every electron/native feature works on asahi.
+
+=handy= pulls fedora's gtk3 =gtk-layer-shell=. ghostty pulls the distinct gtk4
+=gtk4-layer-shell= package from its copr. neither should be added as an
+unexplained top-level package.
+
+* gnome and terminal conveniences
+
+the image uses fedora's signed packages for appindicator, blur my shell,
+caffeine, dash to dock, and gsconnect. they are installed system-wide but not
+force-enabled in an existing user's gnome profile; extension manager remains
+the authority for that personal state.
+
+the command-line layer includes =bat=, =direnv=, =eza=, =fastfetch=, =fd=,
+=fzf=, =gh=, =glow=, =gum=, =just=, =ripgrep=, =shellcheck=, =tealdeer=,
+=tmux=, =trash-cli=, =wl-clipboard=, =yq=, =zoxide=, and =starship=. interactive
+bash, zsh, and fish receive starship, zoxide, and direnv hooks. =atuin= is
+deliberately absent.
+
+* reproducible preflight
+
+syntax-check the yaml and generate the same containerfile shape used by the
+github action:
+
+#+begin_src sh
+yq eval '.' recipes/recipe.yml >/dev/null
+yq eval '.' .github/workflows/build.yml >/dev/null
+
+podman run --rm \
+  --volume "$PWD:/repo:Z" \
+  --workdir /repo \
+  ghcr.io/blue-build/cli:latest \
+  bluebuild generate recipes/recipe.yml
+#+end_src
+
+check the scripts and unit references:
+
+#+begin_src sh
+shellcheck \
+  files/scripts/patch-update-m1n1.sh \
+  files/system/usr/libexec/asahi-bluefin/update-m1n1-if-needed
+
+systemd-analyze verify \
+  files/system/usr/lib/systemd/system/asahi-bluefin-update-m1n1.service
+#+end_src
+
+after publication, verify the signature and architecture:
+
+#+begin_src sh
+cosign verify --key cosign.pub ghcr.io/okwalerie/asahi-bluefin:latest
+skopeo inspect --no-creds \
+  docker://ghcr.io/okwalerie/asahi-bluefin:latest |
+  jq '{Architecture, Digest, Labels}'
+#+end_src
+
+* post-boot acceptance
+
+#+begin_src sh
+bootc status
+systemctl is-enabled \
+  tailscaled.service \
+  uupd.timer \
+  asahi-bluefin-update-m1n1.service
+systemctl list-timers uupd.timer
+
+rpm -q \
+  tailscale uupd chromium emacs-pgtk ghostty starship \
+  claude-desktop-bin codex-desktop handy
+
+flatpak --user list --app
+/home/linuxbrew/.linuxbrew/bin/brew --version
+
+journalctl -b \
+  -u asahi-bluefin-update-m1n1.service \
+  -u uupd.service
+#+end_src
+
+manual acceptance still matters for firefox youtube playback, claude cowork's
+kvm path, codex desktop startup, ghostty rendering, and audio processing through
+easyeffects. an arm64 rpm or flatpak manifest proves availability, not behavior
+on apple silicon.
