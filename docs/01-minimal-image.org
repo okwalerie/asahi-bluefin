@@ -14,7 +14,8 @@ the acceptance criteria are:
 3. tailscale is installed and =tailscaled.service= is enabled;
 4. homebrew initializes on first boot;
 5. firefox and chromium are installed as native fedora rpms;
-6. the image is signed and published to the owner's ghcr namespace.
+6. =update-m1n1= works with rpm-ostree's canonical file timestamps;
+7. the image is signed and published to the owner's ghcr namespace.
 
 * why this base
 
@@ -89,6 +90,45 @@ the daemon is enabled declaratively:
       - tailscaled.service
 #+end_src
 
+* atomic m1n1 compatibility
+
+rpm-ostree canonicalizes package files in =/usr= to an epoch-zero timestamp.
+the fedora =update-m1n1= script runs =gzip -c= over u-boot while using
+=set -e=. gzip warns that the timestamp cannot be represented, exits with
+status 2, and therefore leaves =boot.bin= unchanged.
+
+=files/scripts/patch-update-m1n1.sh= makes the smallest semantic correction:
+
+#+begin_src diff
+-gzip -c "$U_BOOT" >>"${TARGET}.new"
++gzip -nc "$U_BOOT" >>"${TARGET}.new"
+#+end_src
+
+=-n= tells gzip not to encode the input filename or timestamp. the build-time
+patch requires exactly one copy of the known upstream line; it fails closed if
+upstream changes, preventing a stale or misapplied workaround from shipping.
+
+the failure and correction can be reproduced without writing the esp:
+
+#+begin_src sh
+input=/usr/share/uboot/apple_m1/u-boot-nodtb.bin
+stat -c 'epoch=%Y' "$input"
+
+gzip -c "$input" >/dev/null
+echo "$?"
+
+original=$(sha256sum "$input" | cut -d' ' -f1)
+roundtrip=$(gzip -nc "$input" | gzip -dc | sha256sum | cut -d' ' -f1)
+test "$original" = "$roundtrip"
+#+end_src
+
+on the first published image, =stat= returned epoch =0= and ordinary gzip
+printed =warning: file timestamp out of range for gzip format= before exiting
+=2=. the original and =-n= round-trip hashes both were
+=0de50ffa28010b67405d84312b5699e76497fe573de260cfd734383437358956=.
+two independent compressed runs also produced the same sha256,
+=6a079b34e5dce85d086cdda1e426de07f0081cde2d673ef1f6e28b2886fd548f=.
+
 * build path
 
 the workflow uses github's native arm64 runner. this matters: the asahi base is
@@ -157,8 +197,9 @@ tools.
 * deliberately deferred
 
 this milestone does not add codecs, desktop applications, personal rpm repos,
-automatic operating-system updates, or automatic =m1n1= refreshes. each will
-be introduced only after this substrate has built and booted successfully.
+automatic operating-system updates, or automatic =m1n1= refreshes. the manual
+refresh is made functional, but scheduling and coordinating it with deployments
+remain deferred.
 
 * first published build
 

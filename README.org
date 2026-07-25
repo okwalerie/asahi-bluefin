@@ -29,6 +29,12 @@ the base image is itself experimental. automatic =m1n1= handling is outside
 this first milestone, so the manual post-update step still applies: after
 booting an updated deployment, run =sudo update-m1n1= and reboot again.
 
+the image carries a narrow compatibility patch for that command. rpm-ostree
+canonicalizes files in =/usr= to an epoch-zero timestamp; unpatched
+=update-m1n1= passes the timestamp to =gzip=, which exits with status 2 and
+aborts the update. the image changes that invocation from =gzip -c= to
+=gzip -nc= so no source filename or timestamp is embedded.
+
 * implementation record
 
 the literate, reproducible account of the image and its verification lives in

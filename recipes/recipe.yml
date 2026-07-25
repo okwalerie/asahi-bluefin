@@ -27,6 +27,12 @@ modules:
   - type: brew
     brew-analytics: false
 
+  # rpm-ostree canonicalizes /usr mtimes to epoch zero. update-m1n1 must not
+  # ask gzip to encode that timestamp, because gzip exits 2 and aborts safely.
+  - type: script
+    scripts:
+      - patch-update-m1n1.sh
+
   - type: systemd
     system:
       enabled:
