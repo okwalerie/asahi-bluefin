@@ -15,7 +15,9 @@ enable-cowork:
     sudo usermod -aG kvm "$USER"
     @echo "log out and back in before starting cowork"
 
-# report the image-owned packages and per-user flatpaks
+# report the image-owned packages and system flatpaks
 verify:
     rpm -q tailscale uupd chromium chezmoi emacs-pgtk ghostty starship claude-desktop-bin codex-desktop handy
-    flatpak --user list --app
+    codex --version
+    flatpak remotes --system --show-details
+    flatpak --system list --app

@@ -56,6 +56,7 @@ modules:
         - unzip
         - wl-clipboard
         - yq
+        - zstd
         - zoxide
 
         # fedora-packaged extensions avoid build-time extensions.gnome.org
@@ -108,11 +109,13 @@ modules:
 
   - type: default-flatpaks@v2
     configurations:
-      - scope: user
+      # bazaar intentionally manages the system flatpak installation. bluefin
+      # likewise provides system Flathub; a user-only remote is invisible to it.
+      - scope: system
         notify: false
         repo:
           name: flathub
-          title: Flathub (user)
+          title: Flathub
         install:
           - org.mozilla.firefox
           - io.github.kolunmi.Bazaar
@@ -136,6 +139,7 @@ modules:
   - type: script
     scripts:
       - patch-update-m1n1.sh
+      - install-codex-cli.sh
 
   - type: justfiles
     install: false

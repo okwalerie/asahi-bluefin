@@ -1,0 +1,148 @@
+#+title: milestone 4: first-boot findings
+#+date: 2026-07-25
+#+options: toc:3
+
+* objective
+
+close the failures observed after the first successful boot without papering
+over them in per-user desktop files or adding another mutable package runtime.
+
+* codex desktop
+
+=codex-desktop-2026.07.25.042623-1.fc44.aarch64= was launched four times from
+gnome. each invocation stopped at the same deterministic launcher phase:
+
+#+begin_example
+launcher_phase=cli_lookup
+Codex CLI is required but is not installed.
+#+end_example
+
+the desktop entry, wrapper, native arm64 electron binary, and sandbox modes were
+valid. the host had no =codex= command, node, or npm. editing the desktop entry
+would therefore conceal the actual dependency and still leave the frontend
+without its app-server.
+
+the image now installs OpenAI's native arm64 codex =0.145.0= release bundle to
+=/usr/libexec/codex-cli= and exposes =/usr/bin/codex=. the archive is pinned by
+version and the sha-256 digest published on the github release:
+
+#+begin_example
+84e6cc6e218e08140982e2d28c4341a9d8c8d645dd06036ded629c6d7dc8a8fc
+#+end_example
+
+source: https://github.com/openai/codex/releases/tag/rust-v0.145.0
+
+using the release bundle avoids retaining node and npm merely as a launcher for
+the native rust binary. the build fails unless =codex --version= reports the
+exact pinned version.
+
+* flatpak scope and bazaar
+
+the booted host had exactly one flatpak remote:
+
+#+begin_example
+user:   flathub  https://dl.flathub.org/repo/
+system: none
+#+end_example
+
+the first-login bluebuild unit had successfully created that remote and
+installed all seven requested applications. bazaar nevertheless failed with:
+
+#+begin_example
+Failed to modify existing system flathub remote:
+Flatpak system operation ConfigureRemote not allowed for user
+#+end_example
+
+bazaar manages the system flatpak installation. bluefin also explicitly adds
+flathub with =flatpak remote-add --system=. the recipe therefore moves its one
+flatpak configuration from user to system scope.
+
+flatpak state survives rebases, so the existing user remote and applications
+will coexist with the new system copies after the first boot. the image must not
+silently delete user state. after verifying that all seven system applications
+are present, the one-time migration is:
+
+#+begin_src sh
+flatpak --system list --app
+flatpak uninstall --user \
+  org.mozilla.firefox \
+  io.github.kolunmi.Bazaar \
+  io.missioncenter.MissionCenter \
+  com.mattjakeman.ExtensionManager \
+  com.github.wwmm.easyeffects \
+  com.github.tchx84.Flatseal \
+  io.github.flattool.Warehouse
+flatpak uninstall --user --unused
+flatpak remote-delete --user flathub
+#+end_src
+
+none of those commands uses =--delete-data=, so application data under
+=~/.var/app= is retained for the system installation.
+
+google chrome is not expected in bazaar on this machine because google does not
+publish an aarch64 flathub build. the image-owned fedora chromium package is the
+portable browser choice.
+
+bluefin source inspected at commit
+=742b3b77b924aeff47610b6c985dd1805dd5e927=:
+
+- https://github.com/ublue-os/bluefin/blob/742b3b77b924aeff47610b6c985dd1805dd5e927/build_files/base/17-cleanup.sh#L34-L35
+
+* app-menu policy
+
+the image keeps =gnome-extensions-app= and =gnome-software= installed so their
+commands and integration remain available, but shadows their primary desktop
+launchers with =Hidden=true=. extension manager and bazaar are the intended gui
+frontends. only these ids are hidden:
+
+#+begin_example
+org.gnome.Extensions.desktop
+org.gnome.Software.desktop
+#+end_example
+
+the gsconnect preferences launcher and gnome shell's already-hidden extension
+helper are not changed.
+
+* chezmoi finding, intentionally not fixed here
+
+the first clone initially failed ssh host-key verification. after github ssh
+authentication was configured, cloning succeeded and exposed the actual
+dotfiles error:
+
+#+begin_example
+.chezmoiignore.tmpl:42:9: executing ".chezmoiignore.tmpl"
+at <.machine_role>: map has no entry for key "machine_role"
+#+end_example
+
+the update timer's earlier unmet =ConditionPathExists= only records that its
+source directory did not exist when the timer was evaluated before init. the
+timer is not the root failure.
+
+no image-side workaround is added. =machine_role= is dotfiles input data and
+must be defined, defaulted, or prompted for by the dotfiles repository before
+unattended =chezmoi init --apply= can be sound. this remains untouched while the
+current doom emacs setup is in progress.
+
+* emacs and doom
+
+the live asahi host runs =emacs-pgtk-30.2-25.fc44.aarch64= on its 16 kib page
+kernel. a batch probe reports both =PGTK= and =NATIVE_COMP=, with
+=(native-comp-available-p)= true; =libgccjit= and the packaged native =.eln=
+files are present. no copr, homebrew emacs, or source build improves the current
+foundation.
+
+doom itself remains user state. if automated later, its bootstrap belongs in
+the chezmoi-managed dotfiles as an explicit run-once action, not in the image
+build and not in an unconditional login service.
+
+* validation
+
+#+begin_src sh
+codex --version
+flatpak remotes --system --show-details
+flatpak --system list --app
+grep -Fx 'Hidden=true' /usr/share/applications/org.gnome.Extensions.desktop
+grep -Fx 'Hidden=true' /usr/share/applications/org.gnome.Software.desktop
+emacs --batch --eval \
+  '(princ (list system-configuration-features (native-comp-available-p)))'
+#+end_src
