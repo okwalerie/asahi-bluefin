@@ -166,3 +166,20 @@ blujust status
 soar --version
 systemctl --user status chezmoi-init.service chezmoi-update.timer
 #+end_src
+
+* first published build
+
+the complete arm64 build finished successfully on 2026-07-26:
+
+- source commit: =d0f17b12cdaa6cfa86209dedc1a673a12871dce5=;
+- action run: https://github.com/okwalerie/asahi-bluefin/actions/runs/30180608705;
+- manifest digest: =sha256:1437b0a5ae72c9df0ae1fcc7b7eba79782d08439cad1f53eff4599f44b9f0e40=;
+- architecture: =arm64=;
+- bootc label: =1=;
+- base: =quay.io/fedora-asahi-remix-atomic-desktops/silverblue:44=.
+
+the log confirms that chezmoi found the fedora-provided binary and skipped its
+downloader, the pinned archives installed 96 jetbrains mono and two symbol font
+files, dracut regenerated the asahi initramfs, and the kargs module wrote only
+the two audited apple-specific arguments. the image was pushed, signed, and
+verified against =cosign.pub= including its transparency-log evidence.
