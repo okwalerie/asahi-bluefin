@@ -1,0 +1,180 @@
+#+title: milestone 6: solaar bluetooth access and steam initial login
+#+date: 2026-07-26
+#+options: toc:3
+
+* objective
+
+record two host-level failures found after rebasing to the personal bootc image:
+
+- Solaar did not expose an MX Ergo S paired directly over Bluetooth;
+- Steam x86 under =muvm= reached a misleading =Waiting for network= login screen.
+
+Both were verified on an M1 Pro Fedora Asahi Remix 44 host running the
+=asahi-bluefin= image. Neither is an Apple GPU, network reachability, or CPU
+architecture incompatibility.
+
+* solaar and Bluetooth HID access
+
+The MX Ergo S was paired and working as a normal Linux mouse. Its Bluetooth HID
+node was:
+
+#+begin_example
+/dev/hidraw2
+/sys/devices/virtual/misc/uhid/0005:046D:B03E.000B/hidraw/hidraw2
+#+end_example
+
+The original node permission state was root-only, with no active-seat ACL:
+
+#+begin_example
+user::rw-
+group::---
+other::---
+#+end_example
+
+The Solaar Flatpak had =devices=all=, so Flatseal was not the limiting layer.
+A Flatpak cannot install the host udev policy required to grant read/write
+access to the raw =hidraw= node. The relevant upstream Solaar rule explicitly
+covers Bluetooth Logitech HID devices with =KERNELS == "0005:046D:*"= and adds
+=uaccess=.
+
+A temporary live validation copied the upstream rule to
+=/run/udev/rules.d/42-logitech-unify-permissions.rules=, reloaded udev rules,
+and retriggered =hidraw=. It produced:
+
+#+begin_example
+user:kwalerie:rw-
+#+end_example
+
+Native Fedora Solaar =1.1.20= then discovered the device and completed HID++
+queries:
+
+#+begin_example
+MX Ergo S
+Device path  : /dev/hidraw2
+USB id       : 046d:B03E
+Kind         : trackball
+Protocol     : HID++ 4.5
+Battery      : 40%, discharging
+#+end_example
+
+** image policy
+
+The image should own this policy rather than rely on mutable Flatseal state or a
+per-machine =/etc= modification. Install the unmodified upstream rule as:
+
+#+begin_example
+/usr/lib/udev/rules.d/42-logitech-unify-permissions.rules
+#+end_example
+
+The =42-= prefix is intentional: it must run before the later system seat and
+=uaccess= processing. A late local rule, for example =99-solaar.rules=, is not
+equivalent.
+
+The native =solaar= RPM is preferred to the Flatpak for this image because the
+application needs host raw-HID access. The rule is necessary for either
+packaging model.
+
+** validation
+
+#+begin_src sh
+getfacl /dev/hidraw2
+udevadm info --query=property --name=/dev/hidraw2
+solaar show
+#+end_src
+
+Expected udev properties include =uaccess= and the ACL includes the active
+desktop user. =solaar show= should identify the MX Ergo S and print its HID++
+protocol and battery state.
+
+Sources:
+
+- https://github.com/pwr-Solaar/Solaar/blob/master/rules.d-uinput/42-logitech-unify-permissions.rules
+- https://github.com/flathub/io.github.pwr_solaar.solaar
+
+* steam's misleading network login screen
+
+Steam's own connectivity probes succeeded over IPv4 and IPv6. The actual
+failure was in SteamUI's pre-login JavaScript:
+
+#+begin_example
+SteamApp Init - Before Login - SystemNetworkStore - ERROR
+TypeError: SteamClient.System.Network.RegisterForDeviceChanges is not a function
+#+end_example
+
+This left the UI at =WaitingForCredentials= and rendered the window as
+=Waiting for network=. It is a current SteamUI callback regression, not a DNS,
+IPv6, or general network connection failure.
+
+The =steam-runtime-launcher-service= session-bus message seen inside =muvm= is
+also not the login root cause. =muvm= does not implement host D-Bus forwarding;
+passing host session-bus environment variables into the guest cannot create the
+missing socket and must not be treated as a Steam fix.
+
+** initial-login workaround
+
+This is a temporary, version-specific workaround. Steam updates may replace the
+=chunk~*.js= file, and the normal client should be used again after successful
+login. First ensure Steam is fully stopped. Then back up and patch only a chunk
+that has every expected source expression exactly once:
+
+#+begin_src sh
+steamui="$HOME/.local/share/Steam/steamui"
+chunk=$(grep -l 'System.Network.RegisterForDeviceChanges' "$steamui"/chunk~*.js)
+cp --preserve=mode,timestamps "$chunk" "$chunk.asahi-bluefin-pre-network-fix.bak"
+
+CHUNK="$chunk" python3 - <<'PY'
+import os
+from pathlib import Path
+
+p = Path(os.environ["CHUNK"])
+s = p.read_text()
+replacements = {
+    'const t=(0,B.Dp)("System.Network.RegisterForDeviceChanges");':
+    'const t="function"==typeof SteamClient?.System?.Network?.RegisterForDeviceChanges;',
+    '(0,B.Dp)("System.Network.GetProxyInfo")&&SteamClient.System.Network.GetProxyInfo().then':
+    '"function"==typeof SteamClient?.System?.Network?.GetProxyInfo&&SteamClient.System.Network.GetProxyInfo().then',
+    '(0,B.Dp)("System.Network.RegisterForConnectivityTestChanges")&&SteamClient.System.Network.RegisterForConnectivityTestChanges(this.OnConnectivityTestStateChanged)':
+    '"function"==typeof SteamClient?.System?.Network?.RegisterForConnectivityTestChanges&&SteamClient.System.Network.RegisterForConnectivityTestChanges(this.OnConnectivityTestStateChanged)',
+    't||(this.m_bIsAwaitingInitialNetworkState=!1)':
+    't||(this.m_bIsAwaitingInitialNetworkState=!1,this.m_bIsConnectedToANetwork=!0)',
+}
+for old, new in replacements.items():
+    count = s.count(old)
+    if count != 1:
+        raise SystemExit(f"expected one occurrence, found {count}: {old}")
+    s = s.replace(old, new, 1)
+p.write_text(s)
+PY
+
+steam -noverifyfiles -nobootstrapupdate -skipinitialbootstrap -norepairfiles
+#+end_src
+
+The workaround passed the initial login on the target host. Exit Steam after
+sign-in and subsequently launch it normally. Do not bake a user SteamUI chunk
+into the operating-system image: it is user state and is overwritten by Steam
+updates.
+
+** validation and triage
+
+#+begin_src sh
+grep -E 'RegisterForDeviceChanges|WaitingForCredentials' \
+  "$HOME/.local/share/Steam/logs/cef_log.txt" \
+  "$HOME/.local/share/Steam/logs/steamui_login.txt"
+#+end_src
+
+If the callback TypeError is absent, do not apply this workaround. Investigate
+the actual CEF and Steam runtime logs instead.
+
+Sources:
+
+- https://www.reddit.com/r/AsahiLinux/comments/1v66av7/steam_both_arm64_and_x86_stuck_on_waiting_for/
+- https://github.com/AsahiLinux/muvm/issues/175
+
+* intentionally excluded from image documentation
+
+- Doom Emacs smooth-scroll interpolation is user dotfile configuration, not
+  image policy. Disabling Doom's =+interpolate= option removed its high-frequency
+  idle polling while retaining ordinary pixel scrolling.
+- Junction and Switchyard failures are upstream chooser/application-launch bugs.
+  They are neither image configuration nor a reliable browser, Flatpak, or
+  Asahi regression, so they do not belong in the image acceptance record.
