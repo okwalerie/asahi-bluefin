@@ -49,6 +49,7 @@ the literate, reproducible records are:
 - [[file:docs/03-host-ergonomics.org][docs/03-host-ergonomics.org]]: declarative host ergonomics and rejected kernel experiments.
 - [[file:docs/04-first-boot-findings.org][docs/04-first-boot-findings.org]]: first-boot failures and the flatpak scope correction.
 - [[file:docs/05-mutable-cli-and-update-auth.org][docs/05-mutable-cli-and-update-auth.org]]: homebrew cli bootstrap and removal of the duplicate update prompt.
+- [[file:docs/06-solaar-and-steam.org][docs/06-solaar-and-steam.org]]: host HID access for the MX Ergo S and Steam's temporary initial-login workaround.
 
 the executable configuration remains inspectable in
 [[file:recipes/recipe.yml][recipes/recipe.yml]].
