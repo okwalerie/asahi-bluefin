@@ -115,3 +115,18 @@ the last command should report no unit entries. a normal graphical login should
 produce neither a gnome software process nor the repository-refresh password
 prompt. =uupd.timer= remains the sole automatic os, flatpak, and brew update
 orchestrator.
+
+* published build
+
+the native arm64 build completed successfully on 2026-07-25:
+
+- source commit: =7059ae27dc841819c13a2e4754c90c7f4ed84fd7=;
+- action run: https://github.com/okwalerie/asahi-bluefin/actions/runs/30182232934;
+- manifest digest: =sha256:2771e36c8f31a0c1e17282eca0bb9c66e5e3bebb236e4f842ea8a9b6afc56daa=;
+- architecture: =arm64=;
+- bootc label: =1=.
+
+the transaction log explicitly records removal of
+=gnome-software-50.3-1.fc44.aarch64= and
+=gnome-software-rpm-ostree-50.3-1.fc44.aarch64=. the image was pushed and its
+published digest passed cosign verification.
