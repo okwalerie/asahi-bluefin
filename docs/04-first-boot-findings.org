@@ -146,3 +146,18 @@ grep -Fx 'Hidden=true' /usr/share/applications/org.gnome.Software.desktop
 emacs --batch --eval \
   '(princ (list system-configuration-features (native-comp-available-p)))'
 #+end_src
+
+* published build
+
+the native arm64 build completed successfully on 2026-07-25:
+
+- source commit: =16a49c6ed0bf91f71f91c9c4e3be8e06103005eb=;
+- action run: https://github.com/okwalerie/asahi-bluefin/actions/runs/30181668433;
+- manifest digest: =sha256:9702354f8c1317aa055b1aa78757ab2f8e2b3f34cc00abaaee188140b8f9574b=;
+- architecture: =arm64=;
+- bootc label: =1=.
+
+the build log records all seven flathub ids validating for system scope,
+creation of =system-flatpak-setup.timer=, successful completion of the pinned
+codex installer, publication of the commit-specific and rolling tags, and
+successful cosign verification of the published digest.
