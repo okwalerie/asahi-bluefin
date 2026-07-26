@@ -1,0 +1,3 @@
+[org.gnome.desktop.input-sources]
+sources=[('xkb', 'us+colemak')]
+xkb-options=['altwin:swap_alt_win']

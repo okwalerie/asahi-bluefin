@@ -46,6 +46,7 @@ the literate, reproducible records are:
 
 - [[file:docs/01-minimal-image.org][docs/01-minimal-image.org]]: the first minimal, boot-tested milestone;
 - [[file:docs/02-bluefin-layer.org][docs/02-bluefin-layer.org]]: the asahi compatibility audit and current design.
+- [[file:docs/03-host-ergonomics.org][docs/03-host-ergonomics.org]]: declarative host ergonomics and rejected kernel experiments.
 
 the executable configuration remains inspectable in
 [[file:recipes/recipe.yml][recipes/recipe.yml]].

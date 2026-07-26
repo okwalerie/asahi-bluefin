@@ -30,6 +30,7 @@ modules:
       packages:
         # desktop applications and claude cowork's arm64 virtualization path
         - chromium
+        - chezmoi
         - emacs-pgtk
         - qemu-system-aarch64
         - edk2-aarch64
@@ -63,6 +64,7 @@ modules:
         - gnome-shell-extension-caffeine
         - gnome-shell-extension-dash-to-dock
         - gnome-shell-extension-gsconnect
+        - gnome-shell-extension-just-perfection
         # each enabled build-only repo has an includepkgs allowlist; resolving
         # in one transaction keeps fedora available for their dependencies.
         - tailscale
@@ -73,12 +75,35 @@ modules:
         - codex-desktop
         - handy
 
+  # The Fedora aarch64 package is already present, so this module skips its
+  # amd64-only downloader and contributes only the user init/update units.
+  - type: chezmoi
+    repository: git@github.com:okwalerie/dotfiles.git
+    branch: fedora-asahi-arm64
+    all-users: true
+    run-every: 1d
+    wait-after-boot: 5m
+    file-conflict-policy: skip
+
+  - type: fonts
+    fonts:
+      url-fonts:
+        - name: JetBrainsMonoNerdFont
+          url: https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/JetBrainsMono.zip
+        - name: NerdFontsSymbolsOnly
+          url: https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/NerdFontsSymbolsOnly.zip
+
   - type: brew
     brew-analytics: false
     direct-pull: true
     installer-commit: ca0130bd52235f2fcb2bf23cfdda004bc5d250c1
     # uupd owns the one update cadence; do not create competing timers.
     auto-update: false
+    auto-upgrade: false
+
+  # Kept manual while we evaluate whether a second user package manager earns
+  # its keep next to Brew. The module otherwise creates its own update timer.
+  - type: soar
     auto-upgrade: false
 
   - type: default-flatpaks@v2
@@ -102,11 +127,33 @@ modules:
       - source: system
         destination: /
 
+  - type: gschema-overrides
+    include:
+      - zz1-asahi-bluefin.gschema.override
+
   # rpm-ostree canonicalizes /usr mtimes to epoch zero. update-m1n1 must not
   # ask gzip to encode that timestamp, because gzip exits 2 and aborts safely.
   - type: script
     scripts:
       - patch-update-m1n1.sh
+
+  - type: justfiles
+    install: false
+    validate: true
+    include:
+      - asahi-bluefin.just
+
+  # vconsole.conf is consumed in early boot, so regenerate only after every
+  # files/script setting that can affect the initramfs is present.
+  - type: initramfs
+
+  # These are the only portable custom arguments from the boot-tested host.
+  # uupd uses bootc, which applies image-owned kargs on the next deployment.
+  - type: kargs
+    arch: aarch64
+    kargs:
+      - appledrm.show_notch=true
+      - hid_apple.swap_fn_leftctrl=1
 
   - type: systemd
     system:
