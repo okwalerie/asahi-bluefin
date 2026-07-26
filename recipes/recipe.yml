@@ -59,6 +59,8 @@ modules:
         - trash-cli
         - unzip
         - wl-clipboard
+        # Handy's external paste hook uses ydotool on GNOME Wayland.
+        - ydotool
         - yq
         - zoxide
 
@@ -167,5 +169,8 @@ modules:
         - tailscaled.service
         - uupd.timer
         - asahi-bluefin-update-m1n1.service
+    user:
+      enabled:
+        - ydotool.service
 
   - type: signing
