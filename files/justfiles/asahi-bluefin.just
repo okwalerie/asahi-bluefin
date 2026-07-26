@@ -15,9 +15,46 @@ enable-cowork:
     sudo usermod -aG kvm "$USER"
     @echo "log out and back in before starting cowork"
 
+# install or refresh fast-moving ai developer tools in mutable homebrew state
+install-ai-cli:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    brew=/home/linuxbrew/.linuxbrew/bin/brew
+    if ((EUID == 0)); then
+      echo "run this as the desktop user, not root" >&2
+      exit 1
+    fi
+    if [[ ! -x $brew ]]; then
+      echo "homebrew is not ready; reboot or start brew-setup.service" >&2
+      exit 1
+    fi
+
+    ensure_formula() {
+      if "$brew" list --formula "$1" >/dev/null 2>&1; then
+        "$brew" upgrade "$1"
+      else
+        "$brew" install "$1"
+      fi
+    }
+    ensure_cask() {
+      if "$brew" list --cask "$1" >/dev/null 2>&1; then
+        "$brew" upgrade --cask --greedy "$1"
+      else
+        "$brew" install --cask "$1"
+      fi
+    }
+
+    ensure_formula hermes-agent
+    ensure_formula uv
+    ensure_cask codex
+    ensure_cask claude-code
+
+    "$brew" list --versions hermes-agent uv
+    "$brew" list --cask --versions codex claude-code
+
 # report the image-owned packages and system flatpaks
 verify:
     rpm -q tailscale uupd chromium chezmoi emacs-pgtk ghostty starship claude-desktop-bin codex-desktop handy
-    codex --version
     flatpak remotes --system --show-details
     flatpak --system list --app

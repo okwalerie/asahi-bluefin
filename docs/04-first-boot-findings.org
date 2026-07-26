@@ -22,7 +22,7 @@ valid. the host had no =codex= command, node, or npm. editing the desktop entry
 would therefore conceal the actual dependency and still leave the frontend
 without its app-server.
 
-the image now installs OpenAI's native arm64 codex =0.145.0= release bundle to
+the first fix installed OpenAI's native arm64 codex =0.145.0= release bundle to
 =/usr/libexec/codex-cli= and exposes =/usr/bin/codex=. the archive is pinned by
 version and the sha-256 digest published on the github release:
 
@@ -32,9 +32,11 @@ version and the sha-256 digest published on the github release:
 
 source: https://github.com/openai/codex/releases/tag/rust-v0.145.0
 
-using the release bundle avoids retaining node and npm merely as a launcher for
-the native rust binary. the build fails unless =codex --version= reports the
-exact pinned version.
+using the release bundle avoided retaining node and npm merely as a launcher
+for the native rust binary. that build failed unless =codex --version= reported
+the exact pinned version. milestone 5 supersedes this packaging decision: the
+cli changes too rapidly to couple to weekly image publication, so homebrew now
+owns it as mutable user software.
 
 * flatpak scope and bazaar
 
@@ -90,10 +92,10 @@ bluefin source inspected at commit
 
 * app-menu policy
 
-the image keeps =gnome-extensions-app= and =gnome-software= installed so their
-commands and integration remain available, but shadows their primary desktop
-launchers with =Hidden=true=. extension manager and bazaar are the intended gui
-frontends. only these ids are hidden:
+at this milestone the image kept =gnome-extensions-app= and =gnome-software=
+installed but shadowed their primary desktop launchers with =Hidden=true=.
+extension manager and bazaar were the intended gui frontends. these ids were
+hidden:
 
 #+begin_example
 org.gnome.Extensions.desktop
@@ -101,7 +103,9 @@ org.gnome.Software.desktop
 #+end_example
 
 the gsconnect preferences launcher and gnome shell's already-hidden extension
-helper are not changed.
+helper were not changed. milestone 5 removes gnome software entirely after the
+live journal proved that its background service caused the post-login update
+authentication prompt.
 
 * chezmoi finding, intentionally not fixed here
 

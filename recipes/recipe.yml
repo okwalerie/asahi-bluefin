@@ -26,6 +26,10 @@ modules:
       packages:
         - firefox
         - firefox-langpacks
+        # bazaar and uupd replace gnome software's two responsibilities. its
+        # rpm-ostree refresh otherwise requests a second password after login.
+        - gnome-software
+        - gnome-software-rpm-ostree
     install:
       packages:
         # desktop applications and claude cowork's arm64 virtualization path
@@ -56,7 +60,6 @@ modules:
         - unzip
         - wl-clipboard
         - yq
-        - zstd
         - zoxide
 
         # fedora-packaged extensions avoid build-time extensions.gnome.org
@@ -139,7 +142,6 @@ modules:
   - type: script
     scripts:
       - patch-update-m1n1.sh
-      - install-codex-cli.sh
 
   - type: justfiles
     install: false

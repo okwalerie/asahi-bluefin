@@ -47,6 +47,8 @@ the literate, reproducible records are:
 - [[file:docs/01-minimal-image.org][docs/01-minimal-image.org]]: the first minimal, boot-tested milestone;
 - [[file:docs/02-bluefin-layer.org][docs/02-bluefin-layer.org]]: the asahi compatibility audit and current design.
 - [[file:docs/03-host-ergonomics.org][docs/03-host-ergonomics.org]]: declarative host ergonomics and rejected kernel experiments.
+- [[file:docs/04-first-boot-findings.org][docs/04-first-boot-findings.org]]: first-boot failures and the flatpak scope correction.
+- [[file:docs/05-mutable-cli-and-update-auth.org][docs/05-mutable-cli-and-update-auth.org]]: homebrew cli bootstrap and removal of the duplicate update prompt.
 
 the executable configuration remains inspectable in
 [[file:recipes/recipe.yml][recipes/recipe.yml]].
@@ -77,7 +79,16 @@ sudo tailscale up
 
 homebrew is initialized on first boot. its executable is
 =/home/linuxbrew/.linuxbrew/bin/brew= and is added to interactive shell paths.
-the default flatpaks are installed for each user after login.
+the default flatpaks and flathub remote are installed system-wide for bazaar.
+
+install the fast-moving user tools after homebrew is ready:
+
+#+begin_src sh
+blujust install-ai-cli
+#+end_src
+
+this installs or refreshes =hermes-agent=, =codex=, =claude-code=, and =uv=.
+the daily =uupd= job subsequently owns their homebrew updates.
 
 claude desktop bundles cowork, but its arm64 virtualization path needs access
 to =/dev/kvm=. grant that once, then log out and back in:
@@ -99,6 +110,5 @@ the previous atomic deployment remains in the boot menu. it can also be
 selected for the next boot with:
 
 #+begin_src sh
-sudo rpm-ostree rollback
-sudo systemctl reboot
+sudo bootc rollback --apply
 #+end_src

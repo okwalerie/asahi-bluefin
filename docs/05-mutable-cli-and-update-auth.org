@@ -1,0 +1,117 @@
+#+title: milestone 5: mutable cli tools and one update authority
+#+date: 2026-07-25
+#+options: toc:3
+
+* objective
+
+keep fast-moving developer agents out of the weekly os image and remove the
+second password prompt caused by a competing graphical update service.
+
+* homebrew cli bootstrap
+
+the codex desktop rpm is a frontend and still requires a =codex= cli. the
+previous milestone pinned a native codex release into =/usr=. that was
+reproducible, but it coupled a rapidly released user tool to the slower image
+cadence and duplicated homebrew's update role.
+
+the native bundle installer and its extra =zstd= package are removed. the
+image's =blujust= file now provides:
+
+#+begin_src sh
+blujust install-ai-cli
+#+end_src
+
+the recipe must run as the desktop user. it uses the fixed brew-module path
+=/home/linuxbrew/.linuxbrew/bin/brew= rather than depending on an interactive
+shell. it installs missing tools and upgrades existing tools:
+
+| package | homebrew type | live arm64 linux result |
+|-
+| =hermes-agent= | formula | arm64 linux bottle |
+| =uv= | formula | arm64 linux bottle |
+| =codex= | cask | =codex-aarch64-unknown-linux-musl= binary |
+| =claude-code= | cask | =linux-arm64/claude= binary |
+
+=codex= is the cask name; there is no =codex-cli= formula. codex desktop's
+launcher explicitly checks =/home/linuxbrew/.linuxbrew/bin/codex= even when the
+gnome user-manager path does not include homebrew, so no desktop-file or
+environment shim is required.
+
+=hermes-agent= currently has a large python dependency closure. keeping that
+closure in mutable brew state instead of every bootable deployment is
+intentional. =uupd= already owns brew updates after the initial bootstrap.
+
+primary sources:
+
+- https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/h/hermes-agent.rb
+- https://github.com/Homebrew/homebrew-core/blob/HEAD/Formula/u/uv.rb
+- https://github.com/Homebrew/homebrew-cask/blob/HEAD/Casks/c/codex.rb
+- https://github.com/Homebrew/homebrew-cask/blob/HEAD/Casks/c/claude-code.rb
+
+* post-login authentication prompt
+
+the prompt text was:
+
+#+begin_example
+Authentication is required to check available updates
+#+end_example
+
+the exact text comes from polkit action
+=org.projectatomic.rpmostree1.repo-refresh= in
+=/usr/share/polkit-1/actions/org.projectatomic.rpmostree1.policy=. its active
+user policy is =auth_admin_keep=, so the password request itself is operating as
+designed.
+
+the live boot journal identifies the unnecessary caller. gnome software was
+dbus-activated immediately after login as a user service. after the polkit
+authentication succeeded, rpm-ostree recorded:
+
+#+begin_example
+Initiated txn RefreshMd for client(
+  id:gnome-software
+  unit:gnome-software.service
+  uid:1000)
+#+end_example
+
+this rules out =uupd=, packagekit, fwupd, and the m1n1 service. packagekit was
+not installed. gnome software also consumed hundreds of mib while duplicating
+the responsibilities assigned to bazaar and uupd.
+
+the image now removes both =gnome-software= and
+=gnome-software-rpm-ostree=. neither has a reverse dependency on the live
+system. the earlier hidden desktop entry is deleted because hiding a launcher
+does not stop dbus activation of its background service.
+
+no permissive polkit rule is added. granting unattended repository refresh to
+arbitrary desktop callers would weaken the authorization boundary while
+retaining two update authorities. gsettings are also insufficient because the
+dbus service and search provider remain activatable.
+
+bluefin uses the same package-removal policy and asserts their absence during
+its build:
+
+- https://github.com/ublue-os/bluefin/blob/742b3b77b924aeff47610b6c985dd1805dd5e927/build_files/base/04-packages.sh
+- https://github.com/ublue-os/bluefin/blob/742b3b77b924aeff47610b6c985dd1805dd5e927/build_files/base/20-tests.sh
+
+* validation
+
+after booting the new deployment:
+
+#+begin_src sh
+if rpm -q gnome-software gnome-software-rpm-ostree; then
+  echo 'error: gnome software unexpectedly remains installed' >&2
+  exit 1
+fi
+
+blujust install-ai-cli
+/home/linuxbrew/.linuxbrew/bin/brew list --versions hermes-agent uv
+/home/linuxbrew/.linuxbrew/bin/brew list --cask --versions codex claude-code
+/home/linuxbrew/.linuxbrew/bin/codex --version
+
+journalctl --user -b -u gnome-software.service
+#+end_src
+
+the last command should report no unit entries. a normal graphical login should
+produce neither a gnome software process nor the repository-refresh password
+prompt. =uupd.timer= remains the sole automatic os, flatpak, and brew update
+orchestrator.
