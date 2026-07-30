@@ -1,0 +1,79 @@
+#+title: milestone 7: special-layer F3 trackpad toggle
+#+date: 2026-07-29
+#+options: toc:2
+
+* objective
+
+make the physical Apple F3 key on its default special-function layer toggle
+only the internal trackpad, while preserving =Fn+F3= as normal =F3=.
+
+* implementation
+
+this is deliberately mutable per-user GNOME state, not an image default. the
+live Fedora Asahi host uses the Apple SPI keyboard and =hid_apple= with
+=fnmode=3=. in this mode the key without Fn uses the special-function path;
+Fn selects the standard function key.
+
+the kernel maps Apple special F3 to =KEY_SCALE= (evdev code 120). the standard
+xkeyboard configuration maps that event to =XF86LaunchA=. GNOME's native media
+key plugin exposes =touchpad-toggle=, so no keyboard interception daemon,
+root-owned remap, custom script, or udev rule is required.
+
+the applied setting is:
+
+#+begin_src sh
+gsettings set org.gnome.settings-daemon.plugins.media-keys \
+  touchpad-toggle "['XF86LaunchA']"
+#+end_src
+
+this writes the current user's dconf database. it persists across logout,
+reboot, and normal system-image rebases, but remains user-owned configuration:
+an explicit user setting is intentionally not replaced by an image gschema
+default.
+
+* validation
+
+on the target, the persisted binding read back as:
+
+#+begin_example
+touchpad-toggle binding=['XF86LaunchA']
+touchpad send-events='enabled'
+#+end_example
+
+Physical validation confirmed the intended behavior:
+
+- press F3 without Fn: toggle the internal trackpad;
+- press F3 without Fn again: restore it;
+- press Fn+F3: retain ordinary =F3= behavior.
+
+Useful inspection commands:
+
+#+begin_src sh
+cat /sys/module/hid_apple/parameters/fnmode
+gsettings get org.gnome.settings-daemon.plugins.media-keys touchpad-toggle
+gsettings get org.gnome.desktop.peripherals.touchpad send-events
+#+end_src
+
+* rollback
+
+Restore GNOME's inherited binding with:
+
+#+begin_src sh
+gsettings reset org.gnome.settings-daemon.plugins.media-keys touchpad-toggle
+#+end_src
+
+Or disable this assignment explicitly:
+
+#+begin_src sh
+gsettings set org.gnome.settings-daemon.plugins.media-keys touchpad-toggle "['']"
+#+end_src
+
+* primary sources
+
+- [[https://github.com/torvalds/linux/blob/master/drivers/hid/hid-apple.c#L131-L145][Linux hid_apple F3 translation]]
+- [[https://github.com/torvalds/linux/blob/master/drivers/hid/hid-apple.c#L433-L441][Linux hid_apple fnmode 3 selection]]
+- [[https://github.com/torvalds/linux/blob/master/drivers/hid/hid-apple.c#L540-L566][Linux hid_apple Fn translation condition]]
+- [[https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h#L196][Linux KEY_SCALE ABI definition]]
+- [[https://gitlab.freedesktop.org/xkeyboard-config/xkeyboard-config/-/blob/master/keycodes/evdev#L203][xkeyboard-config KEY_SCALE keycode]]
+- [[https://gitlab.freedesktop.org/xkeyboard-config/xkeyboard-config/-/blob/master/symbols/inet#L121][xkeyboard-config XF86LaunchA symbol]]
+- [[https://github.com/GNOME/gnome-settings-daemon/blob/main/data/org.gnome.settings-daemon.plugins.media-keys.gschema.xml.in#L340-L344][GNOME touchpad-toggle schema]]
