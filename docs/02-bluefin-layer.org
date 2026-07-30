@@ -142,16 +142,21 @@ plugin ecosystem without adding audio-plugin packages to the immutable image.
 | Terra repository | =terra-release= | Terra's signed immutable-Fedora bootstrap | include |
 | ghostty | =ghostty= | signed =scottames/ghostty= copr | include |
 | starship | =starship= | signed =atim/starship= copr | include |
-| claude desktop | =claude-desktop-bin= | reprox of patrickjaja releases | include, personal trust |
+| claude desktop | =claude-desktop-extra= | signed patrickjaja RPM repository | include, personal trust |
 | codex desktop | =codex-desktop= | reprox of okwalerie releases | include, personal and experimental |
 | handy | =handy= | reprox of cjpais releases | include, personal trust |
 | claude cowork service | obsolete package | reprox | reject |
 
-reprox signs repository metadata but redirects to unsigned github release rpm
+the Claude Desktop Extra RPM repository signs both its repository metadata and
+RPMs. It provides the community-maintained Fedora/RHEL packaging that is absent
+from Anthropic's official Debian-family Linux release, including aarch64 RPMs.
+It remains a personal-trust source rather than an official Fedora package.
+
+Reprox signs repository metadata but redirects to unsigned GitHub release RPM
 assets, so its configuration necessarily uses =repo_gpgcheck=1= and
-=gpgcheck=0=. that is weaker than fedora or copr package signatures. the three
-reprox packages are accepted because this is a personal image, not represented
-as a safe general default.
+=gpgcheck=0=. That is weaker than Fedora, COPR, or Claude Desktop Extra package
+signatures. The two Reprox packages are accepted because this is a personal
+image, not represented as a safe general default.
 
 all custom repositories are enabled only for the single build transaction and
 removed from the final image by the dnf module. The Terra bootstrap follows its
@@ -244,7 +249,7 @@ systemctl list-timers uupd.timer
 
 rpm -q \
   tailscale uupd chromium emacs-pgtk ghostty starship \
-  claude-desktop-bin codex-desktop handy
+  claude-desktop-extra codex-desktop handy
 
 flatpak --user list --app
 /home/linuxbrew/.linuxbrew/bin/brew --version

@@ -19,7 +19,7 @@ modules:
         - terra.repo
         - ghostty.repo
         - starship.repo
-        - claude-desktop-bin.repo
+        - claude-desktop-extra.repo
         - codex-desktop-bin.repo
         - handy.repo
     remove:
@@ -81,7 +81,7 @@ modules:
         - terra-release
         - ghostty
         - starship
-        - claude-desktop-bin
+        - claude-desktop-extra
         - codex-desktop
         - handy
 

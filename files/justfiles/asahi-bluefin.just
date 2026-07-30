@@ -55,6 +55,6 @@ install-ai-cli:
 
 # report the image-owned packages and system flatpaks
 verify:
-    rpm -q tailscale uupd chromium chezmoi emacs-pgtk ghostty starship claude-desktop-bin codex-desktop handy
+    rpm -q tailscale uupd chromium chezmoi emacs-pgtk ghostty starship claude-desktop-extra codex-desktop handy
     flatpak remotes --system --show-details
     flatpak --system list --app
