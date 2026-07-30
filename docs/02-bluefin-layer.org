@@ -139,6 +139,7 @@ plugin ecosystem without adding audio-plugin packages to the immutable image.
 | application | rpm package | source | decision |
 |-
 | emacs pgtk | =emacs-pgtk= | fedora | include |
+| Terra repository | =terra-release= | Terra's signed immutable-Fedora bootstrap | include |
 | ghostty | =ghostty= | signed =scottames/ghostty= copr | include |
 | starship | =starship= | signed =atim/starship= copr | include |
 | claude desktop | =claude-desktop-bin= | reprox of patrickjaja releases | include, personal trust |
@@ -152,11 +153,14 @@ assets, so its configuration necessarily uses =repo_gpgcheck=1= and
 reprox packages are accepted because this is a personal image, not represented
 as a safe general default.
 
-all custom repositories are enabled only for the single build transaction,
-constrained with =includepkgs= allowlists, and removed from the final image by
-the dnf module. keeping them enabled together lets dnf resolve their ordinary
-dependencies from fedora; a repo-scoped install would incorrectly hide fedora
-and, for example, report ghostty's =zlib-ng= dependency as unavailable.
+all custom repositories are enabled only for the single build transaction and
+removed from the final image by the dnf module. The Terra bootstrap follows its
+official immutable-Fedora instructions: the checked-in source is its signed
+repository definition and =terra-release= carries Terra's runtime repository
+configuration. The other third-party sources are constrained with
+=includepkgs= allowlists. Keeping them enabled together lets dnf resolve their
+ordinary dependencies from fedora; a repo-scoped install would incorrectly hide
+fedora and, for example, report ghostty's =zlib-ng= dependency as unavailable.
 
 the current claude desktop package bundles cowork. installing the obsolete
 standalone =claude-cowork-service= would create two competing implementations,

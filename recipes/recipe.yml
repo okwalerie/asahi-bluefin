@@ -16,6 +16,7 @@ modules:
       files:
         - tailscale.repo
         - ublue-packages.repo
+        - terra.repo
         - ghostty.repo
         - starship.repo
         - claude-desktop-bin.repo
@@ -75,6 +76,9 @@ modules:
         # in one transaction keeps fedora available for their dependencies.
         - tailscale
         - uupd
+        # Terra's official immutable-Fedora bootstrap package owns its runtime
+        # repository configuration; the temporary build repo is cleaned up.
+        - terra-release
         - ghostty
         - starship
         - claude-desktop-bin
