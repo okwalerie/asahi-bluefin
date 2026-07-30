@@ -1,0 +1,8 @@
+[claude-desktop]
+name=Claude Desktop for Linux
+baseurl=https://patrickjaja.github.io/claude-desktop-extra/rpm/
+enabled=1
+gpgcheck=1
+gpgkey=https://patrickjaja.github.io/claude-desktop-extra/gpg-key.asc
+repo_gpgcheck=1
+metadata_expire=300
