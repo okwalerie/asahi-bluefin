@@ -16,6 +16,7 @@ asahi-safe subset of the bluefin experience:
 - homebrew, using bluebuild's brew module
 - tailscale, using tailscale's official rpm repository
 - automatic os, flatpak, and brew updates through =uupd=
+- 16 GiB of image-owned zram compressed swap (bounded by installed RAM)
 - a deployment-aware =m1n1= refresh after a successful boot
 - firefox from flathub for the complete media runtime, plus native chromium
 - selected desktop applications, gnome extensions, and terminal conveniences
@@ -51,6 +52,7 @@ the literate, reproducible records are:
 - [[file:docs/05-mutable-cli-and-update-auth.org][docs/05-mutable-cli-and-update-auth.org]]: homebrew cli bootstrap and removal of the duplicate update prompt.
 - [[file:docs/06-solaar-and-steam.org][docs/06-solaar-and-steam.org]]: host HID access for the MX Ergo S and Steam's temporary initial-login workaround.
 - [[file:docs/07-trackpad-toggle.org][docs/07-trackpad-toggle.org]]: a persistent per-user GNOME binding for the Apple special-layer F3 trackpad toggle.
+- [[file:docs/08-zram-swap.org][docs/08-zram-swap.org]]: image-owned 16 GiB zram compressed-swap policy and verification.
 
 the executable configuration remains inspectable in
 [[file:recipes/recipe.yml][recipes/recipe.yml]].

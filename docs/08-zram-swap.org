@@ -1,0 +1,71 @@
+#+title: milestone 8: image-owned compressed swap capacity
+#+date: 2026-07-31
+#+options: toc:2
+
+* objective
+
+Raise the compressed swap device cap from Fedora's default 8 GiB to 16 GiB for
+this image, without changing a live host or adding a disk-backed swapfile.
+
+* implementation
+
+Fedora's =zram-generator-defaults= package installs
+=/usr/lib/systemd/zram-generator.conf= with:
+
+#+begin_src ini
+[zram0]
+zram-size = min(ram, 8192)
+#+end_src
+
+The repository's generic =files= module maps =files/system= to =/= in the
+built image. It adds the following vendor drop-in at
+=/usr/lib/systemd/zram-generator.conf.d/90-asahi-bluefin-swap.conf=:
+
+#+begin_src ini
+[zram0]
+zram-size = min(ram, 16384)
+#+end_src
+
+=zram-generator.conf.d= drop-ins have higher precedence than the main vendor
+configuration, and the lexically later file wins for a scalar option. The
+expression is in MiB: it exposes 16 GiB of *compressed-swap address space* on
+a machine with at least 16 GiB of RAM, while retaining =ram= as an upper bound
+on smaller machines. It does not reserve 16 GiB of physical RAM at boot; zram
+uses RAM only for pages actually swapped into it, subject to compression ratio
+and kernel memory pressure.
+
+The image does not choose a compression algorithm or a resident-memory cap;
+leaving both unset retains the kernel/package defaults already validated by the
+Fedora Asahi base.
+
+* activation and rollback
+
+The generator runs during boot. After the GitHub image build publishes and the
+laptop stages then boots the resulting deployment, verify the setting with:
+
+#+begin_src sh
+zramctl
+swapon --show --bytes
+systemctl status systemd-zram-setup@zram0.service
+#+end_src
+
+The zram device's =DISKSIZE= and swap =SIZE= should be 17179869184 bytes (16
+GiB) on a laptop with at least 16 GiB RAM. Existing older deployments keep
+their previous configuration. If this policy is undesirable, boot the previous
+atomic deployment or use:
+
+#+begin_src sh
+sudo bootc rollback --apply
+#+end_src
+
+That rollback is deployment-scoped; no mutable =/etc= override or swapfile is
+created by this change.
+
+* validation
+
+The source configuration is validated as an INI section with one scalar
+=zram-size= expression. The BlueBuild recipe's existing files-module mapping
+is generated locally, and =git diff --check= verifies whitespace. Runtime
+verification must occur after the published arm64 image has booted on the
+laptop, because zram-generator evaluates =ram= from the booted machine's
+=/proc/meminfo=.
