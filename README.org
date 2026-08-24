@@ -108,6 +108,24 @@ systemctl status uupd.timer asahi-bluefin-update-m1n1.service
 journalctl -u uupd.service -u asahi-bluefin-update-m1n1.service
 #+end_src
 
+* host-only initramfs
+
+the published image keeps its initramfs portable because github actions cannot
+discover the destination laptop's hardware or storage layout. on the booted
+=asahi= host, opt in to persistent client-side regeneration with:
+
+#+begin_src sh
+blujust enable-hostonly-initramfs
+sudo systemctl reboot
+#+end_src
+
+rpm-ostree will continue tracking the signed image origin and regenerate a
+smaller host-only initramfs for each future deployment. the image-owned
+=vconsole.conf= and fedora asahi dracut configuration remain inputs to that
+local regeneration. resolve any existing =/boot= exhaustion before enabling
+the preference because the first locally derived deployment needs staging
+space.
+
 * rollback
 
 the previous atomic deployment remains in the boot menu. it can also be

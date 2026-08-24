@@ -10,6 +10,11 @@ update:
     sudo systemctl start uupd.service
     systemctl --no-pager --full status uupd.service || true
 
+# keep the published initramfs portable, but regenerate a smaller one on this host
+enable-hostonly-initramfs:
+    sudo rpm-ostree initramfs --enable --arg=--hostonly
+    @echo "reboot to activate the host-only initramfs deployment"
+
 # grant the current user access to claude cowork's kvm virtualization path
 enable-cowork:
     sudo usermod -aG kvm "$USER"
