@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+step() {
+  printf '\n[%ss] %s\n' "$SECONDS" "$1"
+}
+
+step "Installing system tools"
+packages=(jq podman shellcheck skopeo)
+missing_packages=()
+for package in "${packages[@]}"; do
+  if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -Fq 'install ok installed'; then
+    missing_packages+=("$package")
+  fi
+done
+
+if ((${#missing_packages[@]})); then
+  sudo apt-get update
+  sudo env DEBIAN_FRONTEND=noninteractive apt-get install -y "${missing_packages[@]}"
+else
+  echo "System tools are already installed"
+fi
+
+case "$(uname -m)" in
+  x86_64)
+    just_target=x86_64-unknown-linux-musl
+    just_sha256=4a5cc2f53e6f0f8c59092a6cc38291eb729d46a7dd95d3ae582008881b84931d
+    yq_target=linux_amd64
+    yq_sha256=fa52a4e758c63d38299163fbdd1edfb4c4963247918bf9c1c5d31d84789eded4
+    ;;
+  aarch64)
+    just_target=aarch64-unknown-linux-musl
+    just_sha256=748237128c4c40cbdabc65e841d05ceba13cc23a91eaba395495894c1d9764df
+    yq_target=linux_arm64
+    yq_sha256=578648e463a11c1b6db6010cbf41eafed6bee79466fcffa1bb446672cf7945ea
+    ;;
+  *)
+    echo "Unsupported orb architecture: $(uname -m)" >&2
+    exit 1
+    ;;
+esac
+
+step "Installing pinned standalone tools"
+just_version=1.58.0
+if ! command -v just >/dev/null || [[ $(just --version) != "just $just_version" ]]; then
+  archive=$(mktemp)
+  extract_directory=$(mktemp -d)
+  trap 'rm -f "$archive"; rm -rf "$extract_directory"' EXIT
+  curl --fail --location --retry 3 \
+    "https://github.com/casey/just/releases/download/$just_version/just-$just_version-$just_target.tar.gz" \
+    --output "$archive"
+  echo "$just_sha256  $archive" | sha256sum --check --status
+  tar -xzf "$archive" -C "$extract_directory"
+  sudo install -m 0755 "$extract_directory/just" /usr/local/bin/just
+  rm -f "$archive"
+  rm -rf "$extract_directory"
+  trap - EXIT
+else
+  echo "just $just_version is already installed"
+fi
+
+yq_version=v4.53.3
+if ! command -v yq >/dev/null || [[ $(yq --version) != *"version $yq_version" ]]; then
+  binary=$(mktemp)
+  trap 'rm -f "$binary"' EXIT
+  curl --fail --location --retry 3 \
+    "https://github.com/mikefarah/yq/releases/download/$yq_version/yq_$yq_target" \
+    --output "$binary"
+  echo "$yq_sha256  $binary" | sha256sum --check --status
+  sudo install -m 0755 "$binary" /usr/local/bin/yq
+  rm -f "$binary"
+  trap - EXIT
+else
+  echo "yq $yq_version is already installed"
+fi
+
+step "Caching the BlueBuild CLI image"
+podman pull ghcr.io/blue-build/cli:latest
+
+step "Orb setup complete"

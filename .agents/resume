@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# This repository has no resume-time authentication, services, or repair work.
+echo "No orb resume tasks required"
