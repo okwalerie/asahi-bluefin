@@ -33,7 +33,9 @@ modules:
         - gnome-software-rpm-ostree
     install:
       packages:
-        # desktop applications and claude cowork's arm64 virtualization path
+        # Actual Cisco OpenH264 decoder, not Fedora's ABI-only noopenh264 stub.
+        - openh264
+        # Desktop applications and Claude Cowork's arm64 virtualization path.
         - chromium
         - chezmoi
         - emacs-pgtk
