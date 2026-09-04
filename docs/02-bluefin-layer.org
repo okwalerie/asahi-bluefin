@@ -102,10 +102,11 @@ without updating the esp before proving that the new deployment boots.
 
 * browsers and codecs
 
-native fedora firefox was unable to play youtube on the target. =noopenh264=
-primarily supplies cisco's h.264 implementation for webrtc; its presence does
-not provide firefox with a complete general media stack. asahi's apple video
-decoder support is also still incomplete, so software decode is expected.
+native fedora chromium needs an actual h.264 decoder, not Fedora's ABI-compatible
+=noopenh264= stub. installing =openh264= from the inherited Fedora Cisco
+OpenH264 repository atomically replaces the stub, so Chromium can perform
+software H.264 decode. Asahi's Apple video-decoder support is not exposed to
+Chromium through VA-API, so this does not provide hardware video acceleration.
 
 the image therefore replaces native firefox with flathub's arm64 firefox and
 its matching runtime codecs. native chromium remains installed because it was
