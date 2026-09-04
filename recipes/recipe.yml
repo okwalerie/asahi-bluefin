@@ -162,7 +162,8 @@ modules:
   - type: initramfs
 
   # These are the only portable custom arguments from the boot-tested host.
-  # uupd uses bootc, which applies image-owned kargs on the next deployment.
+  # uupd selects bootc or rpm-ostree according to deployment compatibility;
+  # either path applies image-owned kargs on the next deployment.
   - type: kargs
     arch: aarch64
     kargs:

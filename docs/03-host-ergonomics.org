@@ -90,10 +90,11 @@ user's github ssh authentication to work in that session. no deploy key or
 credential is embedded in the image. =skip= preserves locally modified files
 instead of allowing an unattended timer to overwrite them.
 
-the justfiles module provides four real =blujust= recipes:
+the justfiles module provides five real =blujust= recipes:
 
 - =blujust status= shows bootc and updater/m1n1 state;
-- =blujust update= runs uupd without forcing a reboot;
+- =blujust asahi-update= runs uupd without forcing a reboot;
+- =blujust enable-hostonly-initramfs= records host-only client regeneration;
 - =blujust enable-cowork= grants the current user kvm group membership;
 - =blujust verify= inventories image packages and flatpaks.
 

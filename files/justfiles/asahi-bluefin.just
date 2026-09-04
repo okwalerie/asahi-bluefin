@@ -6,9 +6,16 @@ status:
     systemctl --no-pager --full status uupd.timer asahi-bluefin-update-m1n1.service || true
 
 # stage os updates and update flatpaks and brew without forcing a reboot
-update:
+# use an image-specific name because bluebuild's built-in `update` recipe wins
+# when duplicate recipes are imported into the generated blujust justfile.
+asahi-update:
     sudo systemctl start uupd.service
     systemctl --no-pager --full status uupd.service || true
+
+# keep the published initramfs portable, but regenerate a smaller one on this host
+enable-hostonly-initramfs:
+    sudo rpm-ostree initramfs --enable --arg=--hostonly
+    @echo "reboot to activate the host-only initramfs deployment"
 
 # grant the current user access to claude cowork's kvm virtualization path
 enable-cowork:
