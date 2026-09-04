@@ -57,6 +57,26 @@ the literate, reproducible records are:
 the executable configuration remains inspectable in
 [[file:recipes/recipe.yml][recipes/recipe.yml]].
 
+* maintainer builds
+
+The image publishes from the =bluebuild= GitHub Actions workflow. A push that
+changes image inputs starts a build automatically; use the repository's
+=justfile= to request a rebuild of an unchanged ref (for example, after an
+upstream base or repository package update):
+
+#+begin_src sh
+just build                 # dispatch =bluebuild= for main
+just build feature/my-app  # dispatch a branch build
+just builds                # list runs and their GitHub URLs
+just watch <run-id>        # wait for one selected run and return its result
+#+end_src
+
+=just build= only publishes an OCI image after CI succeeds. It never changes
+the laptop. To add or remove image-owned RPMs or Flatpaks, edit
+[[file:recipes/recipe.yml][recipes/recipe.yml]], review the diff, and push the
+change; then wait for its matching arm64 image build to succeed before staging
+a deployment on Asahi.
+
 * rebase
 
 wait for the github action to publish a successful image. then, from the
