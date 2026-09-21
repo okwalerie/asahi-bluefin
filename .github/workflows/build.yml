@@ -4,6 +4,8 @@ on:
     - cron:
         "00 06 * * 0" # refresh the published image Sundays at 06:00 UTC
   push:
+    branches:
+      - main
     paths-ignore: # don't rebuild if only documentation has changed
       - "**.md"
       - "**.org"
