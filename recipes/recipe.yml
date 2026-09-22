@@ -55,7 +55,6 @@ modules:
         - gum
         - jq
         - just
-        - ramalama
         - ripgrep
         - ShellCheck
         - tealdeer
