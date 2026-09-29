@@ -20,7 +20,7 @@ asahi-safe subset of the bluefin experience:
 - a deployment-aware =m1n1= refresh after a successful boot
 - firefox from flathub for the complete media runtime, plus native chromium
 - selected desktop applications, gnome extensions, and terminal conveniences
-- the personal claude desktop, codex desktop, handy, ghostty, and emacs packages
+- the personal claude desktop, official ChatGPT desktop, handy, ghostty, and emacs packages
 
 the asahi kernel, mesa, firmware, audio configuration, desktop, and boot stack
 come from the upstream image and are not replaced here.

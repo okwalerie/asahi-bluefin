@@ -144,7 +144,7 @@ plugin ecosystem without adding audio-plugin packages to the immutable image.
 | ghostty | =ghostty= | signed =scottames/ghostty= copr | include |
 | starship | =starship= | signed =atim/starship= copr | include |
 | claude desktop | =claude-desktop-extra= | signed patrickjaja RPM repository | include, personal trust |
-| codex desktop | =codex-desktop= | reprox of okwalerie releases | include, personal and experimental |
+| ChatGPT desktop | =chatgpt= | signed official OpenAI RPM repository | include, Linux preview |
 | handy | =handy= | reprox of cjpais releases | include, personal trust |
 | claude cowork service | obsolete package | reprox | reject |
 
@@ -156,7 +156,7 @@ It remains a personal-trust source rather than an official Fedora package.
 Reprox signs repository metadata but redirects to unsigned GitHub release RPM
 assets, so its configuration necessarily uses =repo_gpgcheck=1= and
 =gpgcheck=0=. That is weaker than Fedora, COPR, or Claude Desktop Extra package
-signatures. The two Reprox packages are accepted because this is a personal
+signatures. The remaining Handy Reprox package is accepted because this is a personal
 image, not represented as a safe general default.
 
 all custom repositories are enabled only for the single build transaction and
@@ -180,10 +180,23 @@ sudo usermod -aG kvm "$USER"
 
 log out and back in before testing cowork.
 
-the codex desktop rpm is named =codex-desktop= even though its repository is
-named =codex-desktop-bin=. it is a community reconstruction from the official
-macos application, not a first-party linux desktop release, so a successful rpm
-build is not proof that every electron/native feature works on asahi.
+ChatGPT is installed as =chatgpt= from OpenAI's official Fedora ARM64 RPM
+repository, with =gpgcheck=1= and =repo_gpgcheck=1=. The bootstrap public key is
+copied from the official RPM into an image-owned key directory before DNF runs;
+its fingerprint is =3BFA0E4AE8B8CC16A2D9BA684A3B4A566C4660E4=. The build repo
+allows only =chatgpt=. Updates follow image rebuilds and the existing uupd flow,
+not a community updater or the macOS DMG fingerprint.
+
+The upstream RPM also carries its own runtime repository/key configuration.
+The DNF module cleans up the build-only repository. Do not use host DNF to
+modify the immutable deployment. Official Fedora 43/44 ARM64 support does not
+prove all features work on Asahi's 16 KiB kernel: test launch, sign-in, Codex,
+local projects, browser integration, and Wayland/XWayland after deployment.
+
+The old =codex-desktop-bin= repository is retained externally as a fallback;
+revert this migration commit and rebuild to restore the previous image package.
+Historical first-boot findings below describe the community package, not this
+new official app. See https://learn.chatgpt.com/docs/linux/linux-app.
 
 =handy= pulls fedora's gtk3 =gtk-layer-shell=. ghostty pulls the distinct gtk4
 =gtk4-layer-shell= package from its copr. neither should be added as an
@@ -250,7 +263,7 @@ systemctl list-timers uupd.timer
 
 rpm -q \
   tailscale uupd chromium emacs-pgtk ghostty starship \
-  claude-desktop-extra codex-desktop handy
+  claude-desktop-extra chatgpt handy
 
 flatpak --user list --app
 /home/linuxbrew/.linuxbrew/bin/brew --version
@@ -261,6 +274,6 @@ journalctl -b \
 #+end_src
 
 manual acceptance still matters for firefox youtube playback, claude cowork's
-kvm path, codex desktop startup, ghostty rendering, and audio processing through
+kvm path, ChatGPT desktop startup, ghostty rendering, and audio processing through
 easyeffects. an arm64 rpm or flatpak manifest proves availability, not behavior
 on apple silicon.

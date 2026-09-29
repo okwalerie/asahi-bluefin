@@ -10,6 +10,12 @@ platforms:
   - linux/arm64
 
 modules:
+  # Bootstrap the pinned upstream public key before verifying RPM-MD and RPMs.
+  - type: files
+    files:
+      - source: chatgpt-keys
+        destination: /usr/share/asahi-bluefin/keys
+
   - type: dnf
     repos:
       cleanup: true
@@ -20,7 +26,7 @@ modules:
         - ghostty.repo
         - starship.repo
         - claude-desktop-extra.repo
-        - codex-desktop-bin.repo
+        - chatgpt.repo
         - handy.repo
     remove:
       auto-remove: false
@@ -84,7 +90,7 @@ modules:
         - ghostty
         - starship
         - claude-desktop-extra
-        - codex-desktop
+        - chatgpt
         - handy
 
   # The Fedora aarch64 package is already present, so this module skips its
