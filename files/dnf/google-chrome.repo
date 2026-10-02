@@ -1,0 +1,10 @@
+# Official Google RPM repository, as configured by the aarch64 Chrome RPM.
+# Build-only: BlueBuild removes this repository after the image transaction.
+# Limit Google to Chrome stable; all dependencies remain distro-owned.
+[google-chrome]
+name=google-chrome
+baseurl=https://dl.google.com/linux/chrome/rpm/stable/aarch64
+enabled=1
+gpgcheck=1
+gpgkey=https://dl.google.com/linux/linux_signing_key.pub
+includepkgs=google-chrome-stable

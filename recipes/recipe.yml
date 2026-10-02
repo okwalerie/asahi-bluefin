@@ -28,6 +28,7 @@ modules:
         - claude-desktop-extra.repo
         - chatgpt.repo
         - handy.repo
+        - google-chrome.repo
     remove:
       auto-remove: false
       packages:
@@ -43,6 +44,8 @@ modules:
         - openh264
         # Desktop applications and Claude Cowork's arm64 virtualization path.
         - chromium
+        # Official Google ARM64 Chrome; keep Chromium as a distro fallback.
+        - google-chrome-stable
         - chezmoi
         - emacs-pgtk
         - qemu-system-aarch64
@@ -155,6 +158,7 @@ modules:
   # ask gzip to encode that timestamp, because gzip exits 2 and aborts safely.
   - type: script
     scripts:
+      - configure-google-chrome.sh
       - patch-update-m1n1.sh
 
   - type: justfiles

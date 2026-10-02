@@ -19,6 +19,7 @@ asahi-safe subset of the bluefin experience:
 - 16 GiB of image-owned zram compressed swap (bounded by installed RAM)
 - a deployment-aware =m1n1= refresh after a successful boot
 - firefox from flathub for the complete media runtime, plus native chromium
+  and official Google Chrome stable for ARM64
 - selected desktop applications, gnome extensions, and terminal conveniences
 - the personal claude desktop, official ChatGPT desktop, handy, ghostty, and emacs packages
 
@@ -138,6 +139,29 @@ the image-specific recipe name avoids bluebuild's built-in =blujust update=,
 which invokes =bootc upgrade= directly. =uupd= selects =bootc= for an
 unmodified deployment and falls back to =rpm-ostree= when client-side package
 layers or initramfs regeneration make the deployment bootc-incompatible.
+
+* Google Chrome
+
+=google-chrome-stable= is installed from Google's official =aarch64= RPM
+repository with RPM signature verification enabled. The build repository is
+allowlisted to that package and removed after the DNF transaction, like the
+other build-only repositories. The image also removes Google's repository/key
+maintenance cron job and disables automatic repository recreation. Chrome
+updates arrive through rebuilt images
+and the existing =uupd= OS update path, not a separate browser update service.
+Chromium remains installed as a distro-maintained fallback; this change does
+not set Chrome as the default browser or migrate browser profiles.
+
+The official =154.0.8037.97-1.aarch64= RPM passed a version check and a
+sandboxed headless page-rendering smoke test on the Asahi laptop's 16 KiB
+kernel, using an extracted package and a temporary profile. This does not
+verify graphical Wayland, GPU acceleration, or streaming/DRM playback;
+successful ARM64 image CI alone is not proof of those runtime paths.
+
+#+begin_src sh
+rpm -q google-chrome-stable
+google-chrome-stable --version
+#+end_src
 
 * host-only initramfs
 
