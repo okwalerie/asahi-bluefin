@@ -28,6 +28,7 @@ modules:
         - claude-desktop-extra.repo
         - chatgpt.repo
         - handy.repo
+        - google-chrome.repo
     remove:
       auto-remove: false
       packages:
@@ -43,6 +44,8 @@ modules:
         - openh264
         # Desktop applications and Claude Cowork's arm64 virtualization path.
         - chromium
+        # Official Google ARM64 Chrome; keep Chromium as a distro fallback.
+        - google-chrome-stable
         - chezmoi
         - emacs-pgtk
         - qemu-system-aarch64
