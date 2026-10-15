@@ -77,3 +77,32 @@ gsettings set org.gnome.settings-daemon.plugins.media-keys touchpad-toggle "['']
 - [[https://gitlab.freedesktop.org/xkeyboard-config/xkeyboard-config/-/blob/master/keycodes/evdev#L203][xkeyboard-config KEY_SCALE keycode]]
 - [[https://gitlab.freedesktop.org/xkeyboard-config/xkeyboard-config/-/blob/master/symbols/inet#L121][xkeyboard-config XF86LaunchA symbol]]
 - [[https://github.com/GNOME/gnome-settings-daemon/blob/main/data/org.gnome.settings-daemon.plugins.media-keys.gschema.xml.in#L340-L344][GNOME touchpad-toggle schema]]
+
+* appendix: superseded custom script
+
+before the native =touchpad-toggle= binding, a user script bound to a GNOME
+custom shortcut (=Fn+F3=) flipped =send-events= directly. kept for reference;
+it is not needed with the binding above.
+
+#+begin_src bash
+#!/usr/bin/env bash
+# Toggle the GNOME/libinput state of the internal touchpad.
+# Invoked by the Fn+F3 GNOME custom shortcut.
+set -euo pipefail
+
+schema='org.gnome.desktop.peripherals.touchpad'
+key='send-events'
+current=$(gsettings get "$schema" "$key")
+
+if [[ "$current" == "'enabled'" ]]; then
+  gsettings set "$schema" "$key" disabled
+  state='disabled'
+  detail='Use Fn+F3 again to re-enable it.'
+else
+  gsettings set "$schema" "$key" enabled
+  state='enabled'
+  detail='Use Fn+F3 again to disable it.'
+fi
+
+notify-send --app-name='Trackpad' "Trackpad ${state}" "$detail" || true
+#+end_src
