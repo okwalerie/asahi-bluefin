@@ -52,6 +52,11 @@ modules:
         - edk2-aarch64
         - virtiofsd
 
+        # Native Node addons (Hermes Desktop/node-pty) build on the host.
+        - gcc-c++
+        - make
+        - python3
+
         # portable terminal conveniences; deliberately no atuin
         - bat
         - direnv

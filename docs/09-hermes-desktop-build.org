@@ -1,0 +1,36 @@
+#+title: hermes desktop native build prerequisites
+
+* image dependencies
+
+The image explicitly provides =gcc-c++=, =make=, and =python3= for native
+Node addons such as Hermes Desktop's =node-pty=. Hermes itself remains a
+user-managed application; the image does not install it or its Node runtime.
+
+The audited Fedora 44 Asahi host already had make, Python, GCC, and Electron's
+usual runtime libraries, but no C++ compiler. The observed failure was
+=make: g++: No such file or directory=. A Distrobox is not required just to
+supply that compiler. This change does not establish that all Hermes native
+components work on Asahi's 16 KiB-page kernel; a native build and GUI launch
+remain application-level validation after deployment.
+
+* temporary overlay on an older image
+
+On the Asahi laptop, while waiting for the updated image:
+
+#+begin_src sh
+sudo rpm-ostree install gcc-c++
+systemctl reboot
+#+end_src
+
+After reboot, verify =g++ --version= and retry =hermes desktop=.
+This stages a deployment and requires a reboot; it does not install Hermes.
+
+Once booted into an image that includes these prerequisites, remove the local
+request if =rpm-ostree status= still lists =gcc-c++= as a requested package:
+
+#+begin_src sh
+sudo rpm-ostree uninstall gcc-c++
+#+end_src
+
+That removes the overlay request, not the compiler owned by the updated base
+image. Follow rpm-ostree's deployment/reboot guidance for the resulting change.
