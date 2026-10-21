@@ -2,7 +2,7 @@ name: Prune old container images
 
 on:
   schedule:
-    - cron: '30 7 * * 0'
+    - cron: '30 7 * * *'
   workflow_dispatch:
   workflow_run:
     workflows: [bluebuild]
@@ -15,6 +15,7 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  contents: read
   packages: write
 
 jobs:
@@ -26,6 +27,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
+      # Always use trusted default-branch code, never a workflow_run head SHA.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Test retention rules
+        run: python3 -m unittest discover -s .github/scripts -v
+      - name: Select weekly archives
+        id: retention
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 .github/scripts/retention.py
       - name: Prune old images and their unused signatures
         # v1, pinned so upstream changes cannot silently gain package write access.
         uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f
@@ -33,10 +46,10 @@ jobs:
           token: ${{ github.token }}
           owner: okwalerie
           package: asahi-bluefin
-          # All images from the last month, plus four older rollback builds.
-          older-than: 30 days
-          keep-n-tagged: 4
-          exclude-tags: latest,44,known-good
+          # All builds for seven days; one per UTC calendar week up to one month.
+          older-than: 7 days
+          keep-n-tagged: 0
+          exclude-tags: ${{ steps.retention.outputs.exclude }}
           delete-untagged: true
           delete-orphaned-images: true
           dry-run: false

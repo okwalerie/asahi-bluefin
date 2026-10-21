@@ -2,7 +2,7 @@ name: bluebuild
 on:
   schedule:
     - cron:
-        "00 06 * * 0" # refresh the published image Sundays at 06:00 UTC
+        "00 06 * * *" # refresh the published image daily at 06:00 UTC
   push:
     branches:
       - main
