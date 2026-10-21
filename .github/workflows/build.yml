@@ -13,9 +13,9 @@ on:
   pull_request:
   workflow_dispatch: # allow manually triggering builds
 concurrency:
-  # only run one build at a time
-  group: ${{ github.workflow }}-${{ github.ref || github.run_id }}
-  cancel-in-progress: true
+  # Serialize all publishers with package cleanup to avoid deleting in-flight images.
+  group: asahi-bluefin-packages
+  cancel-in-progress: false
 jobs:
   bluebuild:
     name: Build arm64 image

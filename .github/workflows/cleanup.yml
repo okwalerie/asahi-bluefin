@@ -1,0 +1,43 @@
+name: Prune old container images
+
+on:
+  schedule:
+    - cron: '30 7 * * 0'
+  workflow_dispatch:
+  workflow_run:
+    workflows: [bluebuild]
+    branches: [main]
+    types: [completed]
+
+# Publishing and pruning must never overlap, including manual runs.
+concurrency:
+  group: asahi-bluefin-packages
+  cancel-in-progress: false
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event != 'pull_request')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Prune old images and their unused signatures
+        # v1, pinned so upstream changes cannot silently gain package write access.
+        uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f
+        with:
+          token: ${{ github.token }}
+          owner: okwalerie
+          package: asahi-bluefin
+          # All images from the last month, plus four older rollback builds.
+          older-than: 30 days
+          keep-n-tagged: 4
+          exclude-tags: latest,44,known-good
+          delete-untagged: true
+          delete-orphaned-images: true
+          dry-run: false
+          validate: true
