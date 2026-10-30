@@ -22,8 +22,9 @@ modules:
       files:
         - tailscale.repo
         - ublue-packages.repo
+        # Terra owns the whole Ghostty package family; do not mix COPR's
+        # monolithic RPM with Terra's split completions/integration packages.
         - terra.repo
-        - ghostty.repo
         - starship.repo
         - claude-desktop-extra.repo
         - chatgpt.repo
