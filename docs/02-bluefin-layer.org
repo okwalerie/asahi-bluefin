@@ -141,7 +141,7 @@ plugin ecosystem without adding audio-plugin packages to the immutable image.
 |-
 | emacs pgtk | =emacs-pgtk= | fedora | include |
 | Terra repository | =terra-release= | Terra's signed immutable-Fedora bootstrap | include |
-| ghostty | =ghostty= | signed =scottames/ghostty= copr | include |
+| ghostty | =ghostty= and matching support RPMs | Terra, signed metadata and RPMs | include |
 | starship | =starship= | signed =atim/starship= copr | include |
 | claude desktop | =claude-desktop-extra= | signed patrickjaja RPM repository | include, personal trust |
 | ChatGPT desktop | =chatgpt= | signed official OpenAI RPM repository | include, Linux preview |
@@ -198,9 +198,14 @@ revert this migration commit and rebuild to restore the previous image package.
 Historical first-boot findings below describe the community package, not this
 new official app. See https://learn.chatgpt.com/docs/linux/linux-app.
 
-=handy= pulls fedora's gtk3 =gtk-layer-shell=. ghostty pulls the distinct gtk4
-=gtk4-layer-shell= package from its copr. neither should be added as an
-unexplained top-level package.
+=handy= pulls fedora's gtk3 =gtk-layer-shell=. Ghostty and its split completion,
+shell-integration, and terminfo packages come from Terra as one package family.
+The build no longer enables the =scottames/ghostty= COPR: its monolithic 1.4 RPM
+conflicts with the files in Terra's 1.3 support packages, which DNF can pull as
+weak dependencies even when it selects the newer COPR main package. Terra is
+already an approved runtime source; using it alone avoids mixed packaging.
+This selects Terra's stable release, which may lag the former COPR version.
+Neither dependency checks nor RPM signature checks are bypassed.
 
 * gnome and terminal conveniences
 
