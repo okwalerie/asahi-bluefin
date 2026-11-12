@@ -15,6 +15,9 @@ modules:
     files:
       - source: chatgpt-keys
         destination: /usr/share/asahi-bluefin/keys
+      # Bootstrap only: the ChatGPT RPM owns the active yum repository file.
+      - source: chatgpt-bootstrap
+        destination: /usr/share/asahi-bluefin/bootstrap
 
   - type: dnf
     repos:

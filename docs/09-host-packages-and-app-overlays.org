@@ -9,10 +9,15 @@ Solaar and the Docker stack (=containerd=, =docker-cli=, =docker-compose=,
 =moby-engine=) belong in the image. This does not enable Docker or change
 existing host service settings.
 
-ChatGPT and Claude Desktop are optional RPM overlays so their releases need
-not wait for an image rebuild. Their signed repositories ship as defaults in
-=/etc/yum.repos.d/=, with ChatGPT's pinned public key under
-=/usr/share/asahi-bluefin/keys/=. Claude Desktop remains a third-party package.
+ChatGPT and Claude Desktop are optional RPM overlays so their releases
+need not wait for an image rebuild. Claude's signed repository ships as a
+default in =/etc/yum.repos.d/=. ChatGPT's RPM owns its active
+=/etc/yum.repos.d/chatgpt.repo= and its signing keys; the image must not also
+own that file, or rpm-ostree overlay checkout fails. The image supplies a
+bootstrap copy at =/usr/share/asahi-bluefin/bootstrap/chatgpt.repo= and a pinned
+public key under =/usr/share/asahi-bluefin/keys/=. On a fresh host without the
+app or its repository, copy the bootstrap repo into =/etc/yum.repos.d/= before
+requesting the overlay. Claude Desktop remains a third-party package.
 The image retains the existing Cowork virtualization dependencies.
 
 * Transition
