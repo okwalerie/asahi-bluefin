@@ -30,6 +30,7 @@ modules:
         - chatgpt.repo
         - handy.repo
         - google-chrome.repo
+        - keyd.repo
     remove:
       auto-remove: false
       packages:
@@ -101,6 +102,8 @@ modules:
         - claude-desktop-extra
         - chatgpt
         - handy
+        # Device-specific keyboard remapping, including GNOME on Wayland.
+        - keyd
 
   # The Fedora aarch64 package is already present, so this module skips its
   # amd64-only downloader and contributes only the user init/update units.
