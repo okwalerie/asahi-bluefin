@@ -21,7 +21,8 @@ asahi-safe subset of the bluefin experience:
 - firefox from flathub for the complete media runtime, plus native chromium
   and official Google Chrome stable for ARM64
 - selected desktop applications, gnome extensions, and terminal conveniences
-- the personal claude desktop, official ChatGPT desktop, handy, ghostty, and emacs packages
+- handy, ghostty, emacs, Solaar, keyd, and the Docker runtime
+- signed repositories for optional Claude Desktop and ChatGPT RPM overlays
 
 the asahi kernel, mesa, firmware, audio configuration, desktop, and boot stack
 come from the upstream image and are not replaced here.
@@ -54,6 +55,7 @@ the literate, reproducible records are:
 - [[file:docs/06-solaar-and-steam.org][docs/06-solaar-and-steam.org]]: host HID access for the MX Ergo S and Steam's temporary initial-login workaround.
 - [[file:docs/07-trackpad-toggle.org][docs/07-trackpad-toggle.org]]: a persistent per-user GNOME binding for the Apple special-layer F3 trackpad toggle.
 - [[file:docs/08-zram-swap.org][docs/08-zram-swap.org]]: image-owned 16 GiB zram compressed-swap policy and verification.
+- [[file:docs/09-host-packages-and-app-overlays.org][docs/09-host-packages-and-app-overlays.org]]: permanent host packages and independently packaged AI desktop apps.
 
 the executable configuration remains inspectable in
 [[file:recipes/recipe.yml][recipes/recipe.yml]].

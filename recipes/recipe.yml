@@ -10,7 +10,7 @@ platforms:
   - linux/arm64
 
 modules:
-  # Bootstrap the pinned upstream public key before verifying RPM-MD and RPMs.
+  # Keep the pinned ChatGPT key available for the optional desktop-app overlay.
   - type: files
     files:
       - source: chatgpt-keys
@@ -26,8 +26,6 @@ modules:
         # monolithic RPM with Terra's split completions/integration packages.
         - terra.repo
         - starship.repo
-        - claude-desktop-extra.repo
-        - chatgpt.repo
         - handy.repo
         - google-chrome.repo
         - keyd.repo
@@ -53,6 +51,13 @@ modules:
         - qemu-system-aarch64
         - edk2-aarch64
         - virtiofsd
+
+        # Permanent host integration: Logitech devices and the Docker runtime.
+        - solaar
+        - containerd
+        - docker-cli
+        - docker-compose
+        - moby-engine
 
         # Native Node addons (Hermes Desktop/node-pty) build on the host.
         - gcc-c++
@@ -99,8 +104,6 @@ modules:
         - terra-release
         - ghostty
         - starship
-        - claude-desktop-extra
-        - chatgpt
         - handy
         # Device-specific keyboard remapping, including GNOME on Wayland.
         - keyd

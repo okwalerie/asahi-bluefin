@@ -62,6 +62,6 @@ install-ai-cli:
 
 # report the image-owned packages and system flatpaks
 verify:
-    rpm -q tailscale uupd chromium openh264 chezmoi emacs-pgtk ghostty starship claude-desktop-extra chatgpt handy
+    rpm -q tailscale uupd chromium openh264 chezmoi emacs-pgtk ghostty starship handy keyd solaar containerd docker-cli docker-compose moby-engine
     flatpak remotes --system --show-details
     flatpak --system list --app

@@ -1,0 +1,49 @@
+#+title: Host packages and desktop-app overlays
+#+filetags: :derived:
+
+* Ownership
+
+Decision: Walerie, Telegram, 2026-11-11.
+
+Solaar and the Docker stack (=containerd=, =docker-cli=, =docker-compose=,
+=moby-engine=) belong in the image. This does not enable Docker or change
+existing host service settings.
+
+ChatGPT and Claude Desktop are optional RPM overlays so their releases need
+not wait for an image rebuild. Their signed repositories ship as defaults in
+=/etc/yum.repos.d/=, with ChatGPT's pinned public key under
+=/usr/share/asahi-bluefin/keys/=. Claude Desktop remains a third-party package.
+The image retains the existing Cowork virtualization dependencies.
+
+* Transition
+
+Before adopting the image that drops the desktop apps, record explicit
+requests for them even while they are still in the base image:
+
+#+begin_src sh
+sudo rpm-ostree install --allow-inactive chatgpt claude-desktop-extra
+#+end_src
+
+After the new image builds successfully, stage the update and reboot. Verify
+that the new image supplies Solaar and Docker before removing their old local
+requests. Remove those requests and the unwanted app overlays with:
+
+#+begin_src sh
+sudo rpm-ostree uninstall solaar containerd docker-cli docker-compose moby-engine blender buzz
+#+end_src
+
+This stages another deployment; reboot when ready. Blender and Buzz need
+separate supported ARM64 app installs if still wanted. Removing these RPMs
+does not install replacement applications. Keep Steam's overlay: the existing
+[[file:06-solaar-and-steam.org][Steam record]] documents a working Asahi/muvm setup, not an untested RPM.
+
+Future overlay updates use =sudo rpm-ostree upgrade= and require booting the
+new deployment. Overlays do not provide live independent =dnf= updates, and
+repository defaults can have local administrator overrides.
+
+* Enchant
+
+Leave =enchant2-devel= unchanged until its consumer is known. Searching all
+fetched asahi-bluefin refs with =git log --all -G enchant -- .= and commit
+messages found no explanation; this does not establish why it was installed
+on the laptop.
